@@ -58,41 +58,14 @@
   <script>
     const socket = io();
 
-    // Announcement queue logic to prevent audio cutting off
-    let speechQueue = [];
-    let isSpeaking = false;
-
-    function processSpeechQueue() {
-      if (isSpeaking || speechQueue.length === 0) return;
-
-      isSpeaking = true;
-      const nextText = speechQueue.shift();
-
+    function speakAnnouncement(text) {
       if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(nextText);
+        window.speechSynthesis.cancel(); // Clears any active voice clip smoothly before speaking new audio
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.9;
         utterance.pitch = 1.0;
-
-        // When current announcement finishes, play the next one in queue
-        utterance.onend = () => {
-          isSpeaking = false;
-          processSpeechQueue();
-        };
-
-        utterance.onerror = () => {
-          isSpeaking = false;
-          processSpeechQueue();
-        };
-
         window.speechSynthesis.speak(utterance);
-      } else {
-        isSpeaking = false;
       }
-    }
-
-    function speakAnnouncement(text) {
-      speechQueue.push(text);
-      processSpeechQueue();
     }
 
     function toggleFullscreen() {
@@ -140,6 +113,7 @@
         let voiceText = "";
 
         if (action === 'recall') {
+          // Check if both lines are active during recall
           let recallParts = [];
           if (state.regular > 0) recallParts.push(`Regular Number ${state.regular}`);
           if (state.priority > 0) recallParts.push(`Priority Number ${state.priority}`);
@@ -150,6 +124,7 @@
             voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
           }
         } else if (action === 'call' || action === 'skip') {
+          // Strictly call ONLY the queue line that was just pressed
           voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
         }
 
