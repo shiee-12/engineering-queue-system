@@ -200,14 +200,19 @@ main {
 
 /* Control Buttons */
 .controls-row {
-  display: flex;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Equal 50/50 split across the whole card width */
+  gap: 12px;                      /* Clean spacing between the two buttons */
+  width: 100%;                    /* Ensures the row stretches fully */
   margin-bottom: 12px;
 }
 
+/* Make both buttons stretch to fill their half of the container */
 .controls-row .btn {
-  flex: 1;                         /* Both buttons grow equally */
   width: 100%;
+  padding-top: 14px;              /* Makes the buttons taller for better tap targets */
+  padding-bottom: 14px;
+  font-size: 1.1rem;              /* Slightly larger text to match the bigger button */
 }
 
 .btn {
