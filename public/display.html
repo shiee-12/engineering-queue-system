@@ -1,13 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Title Google shows in search results -->
   <title>Engineering Queue Management System | Municipality of Naic</title>
-  
-  <!-- Description Google displays under the title -->
   <meta name="description" content="Official Queue Management System for the Engineering Office, Municipality of Naic, Cavite. View live serving numbers for Regular and Priority lines.">
   <meta name="keywords" content="Queue System: Municipality of Naic - Engineering Office">
   <link rel="stylesheet" href="style.css">
@@ -58,36 +55,42 @@
   <script>
     const socket = io();
 
-    // Announcement queue logic to prevent audio cutting off
     let speechQueue = [];
     let isSpeaking = false;
+    let lastActionTimestamp = null;
+
+    // Heartbeat to prevent browser Speech Synthesis freeze
+    setInterval(() => {
+      if ('speechSynthesis' in window) {
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
+      }
+    }, 5000);
 
     function processSpeechQueue() {
       if (isSpeaking || speechQueue.length === 0) return;
+      if (!('speechSynthesis' in window)) return;
 
       isSpeaking = true;
       const nextText = speechQueue.shift();
 
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(nextText);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
+      const utterance = new SpeechSynthesisUtterance(nextText);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
 
-        // When current announcement finishes, play the next one in queue
-        utterance.onend = () => {
-          isSpeaking = false;
-          processSpeechQueue();
-        };
-
-        utterance.onerror = () => {
-          isSpeaking = false;
-          processSpeechQueue();
-        };
-
-        window.speechSynthesis.speak(utterance);
-      } else {
+      utterance.onend = () => {
         isSpeaking = false;
-      }
+        setTimeout(processSpeechQueue, 100);
+      };
+
+      utterance.onerror = () => {
+        isSpeaking = false;
+        setTimeout(processSpeechQueue, 100);
+      };
+
+      window.speechSynthesis.speak(utterance);
     }
 
     function speakAnnouncement(text) {
@@ -110,17 +113,15 @@
 
       // Update Screen Display Numbers
       if (state.regular > 0) {
-        regDisplay.innerHTML = state.regular;
-        regDisplay.classList.remove('regular-box');
+        regDisplay.innerText = state.regular;
       } else {
-        regDisplay.innerHTML = '<div class="number-box regular-box"></div>';
+        regDisplay.innerText = '-';
       }
 
       if (state.priority > 0) {
-        prioDisplay.innerHTML = state.priority;
-        prioDisplay.classList.remove('priority-box');
+        prioDisplay.innerText = state.priority;
       } else {
-        prioDisplay.innerHTML = '<div class="number-box priority-box"></div>';
+        prioDisplay.innerText = '-';
       }
 
       // Update Screen Banner Text
@@ -134,22 +135,17 @@
         banner.innerText = "Waiting for the next number...";
       }
 
-      // Voice Logic Handling based on precise action triggered
-      if (state.lastCalled) {
+      // Voice Logic Handling
+      if (state.lastCalled && state.lastCalled.timestamp !== lastActionTimestamp) {
+        lastActionTimestamp = state.lastCalled.timestamp;
         const { type, number, action } = state.lastCalled;
         let voiceText = "";
 
         if (action === 'recall') {
-          let recallParts = [];
-          if (state.regular > 0) recallParts.push(`Regular Number ${state.regular}`);
-          if (state.priority > 0) recallParts.push(`Priority Number ${state.priority}`);
-
-          if (recallParts.length > 1) {
-            voiceText = `Again, calling for ${recallParts.join(' and ')}. Please proceed to the counter.`;
-          } else {
-            voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
-          }
-        } else if (action === 'call' || action === 'skip') {
+          // Strictly announce only the queue where recall was pressed
+          voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
+        } else if (action === 'next' || action === 'skip' || action === 'call') {
+          // Next, Skip, and Manual share identical announcement sound
           voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
         }
 
