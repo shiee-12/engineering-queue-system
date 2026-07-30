@@ -37,16 +37,11 @@ header {
   gap: 15px;
 }
 
-.logo-placeholder {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 2px dashed var(--navy);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
+.app-logo {
+    width: 60px;         /* Adjust width as needed */
+    height: auto;        /* Maintains aspect ratio */
+    object-fit: contain;
+    margin-right: 12px;  /* Adds space next to the text */
 }
 
 .office-info h2 {
