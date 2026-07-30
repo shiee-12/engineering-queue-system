@@ -58,36 +58,40 @@
   <script>
     const socket = io();
 
-    // Announcement queue logic to prevent audio cutting off
     let speechQueue = [];
     let isSpeaking = false;
 
+    // Fix browser speech engine freezing WITHOUT re-triggering audio
+    setInterval(() => {
+      if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+        window.speechSynthesis.resume();
+      }
+    }, 5000);
+
     function processSpeechQueue() {
       if (isSpeaking || speechQueue.length === 0) return;
+      if (!('speechSynthesis' in window)) return;
 
       isSpeaking = true;
       const nextText = speechQueue.shift();
 
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(nextText);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
+      window.speechSynthesis.cancel(); 
 
-        // When current announcement finishes, play the next one in queue
-        utterance.onend = () => {
-          isSpeaking = false;
-          processSpeechQueue();
-        };
+      const utterance = new SpeechSynthesisUtterance(nextText);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
 
-        utterance.onerror = () => {
-          isSpeaking = false;
-          processSpeechQueue();
-        };
-
-        window.speechSynthesis.speak(utterance);
-      } else {
+      utterance.onend = () => {
         isSpeaking = false;
-      }
+        setTimeout(processSpeechQueue, 100);
+      };
+
+      utterance.onerror = () => {
+        isSpeaking = false;
+        setTimeout(processSpeechQueue, 100);
+      };
+
+      window.speechSynthesis.speak(utterance);
     }
 
     function speakAnnouncement(text) {
@@ -102,6 +106,8 @@
         document.exitFullscreen();
       }
     }
+
+    let lastActionTimestamp = null;
 
     socket.on('stateUpdate', (state) => {
       const regDisplay = document.getElementById('reg-num-display');
@@ -134,22 +140,16 @@
         banner.innerText = "Waiting for the next number...";
       }
 
-      // Voice Logic Handling based on precise action triggered
-      if (state.lastCalled) {
+      // Handle Voice Announcements (Triggers ONLY once per unique click timestamp)
+      if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
+        lastActionTimestamp = state.lastCalled.timestamp;
         const { type, number, action } = state.lastCalled;
+        
         let voiceText = "";
 
         if (action === 'recall') {
-          let recallParts = [];
-          if (state.regular > 0) recallParts.push(`Regular Number ${state.regular}`);
-          if (state.priority > 0) recallParts.push(`Priority Number ${state.priority}`);
-
-          if (recallParts.length > 1) {
-            voiceText = `Again, calling for ${recallParts.join(' and ')}. Please proceed to the counter.`;
-          } else {
-            voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
-          }
-        } else if (action === 'call' || action === 'skip') {
+          voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
+        } else if (action === 'next' || action === 'skip' || action === 'call') {
           voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
         }
 

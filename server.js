@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
 let queueState = {
   regular: 0,
   priority: 0,
-  lastCalled: null // { type: 'Regular'|'Priority', number: X, action: 'call'|'skip'|'recall' }
+  lastCalled: null 
 };
 
 io.on('connection', (socket) => {
@@ -24,6 +24,7 @@ io.on('connection', (socket) => {
 
   socket.on('queueAction', (data) => {
     const { action, queueType, manualNumber } = data;
+    const now = Date.now();
 
     if (action === 'resetBoth') {
       queueState.regular = 0;
@@ -36,22 +37,22 @@ io.on('connection', (socket) => {
     } else if (queueType === 'regular') {
       if (action === 'next' || action === 'skip') {
         queueState.regular = queueState.regular >= 20 ? 1 : queueState.regular + 1;
-        queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: action };
+        queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: action, timestamp: now };
       } else if (action === 'recall' && queueState.regular > 0) {
-        queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: 'recall' };
+        queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: 'recall', timestamp: now };
       } else if (action === 'manual' && manualNumber) {
         queueState.regular = parseInt(manualNumber, 10);
-        queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: 'call' };
+        queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: 'call', timestamp: now };
       }
     } else if (queueType === 'priority') {
       if (action === 'next' || action === 'skip') {
         queueState.priority = queueState.priority >= 20 ? 1 : queueState.priority + 1;
-        queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: action };
+        queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: action, timestamp: now };
       } else if (action === 'recall' && queueState.priority > 0) {
-        queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: 'recall' };
+        queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: 'recall', timestamp: now };
       } else if (action === 'manual' && manualNumber) {
         queueState.priority = parseInt(manualNumber, 10);
-        queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: 'call' };
+        queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: 'call', timestamp: now };
       }
     }
 
