@@ -101,16 +101,16 @@
       }
 
       if (servingParts.length > 0) {
-        const fullAnnouncement = `Now serving ${servingParts.join(' and ')}. Please proceed to the counter.`;
-        
-        // Update screen banner
-        banner.innerText = fullAnnouncement;
+        // Update bottom banner text to show all currently active numbers
+        banner.innerText = `Now serving ${servingParts.join(' and ')}. Please proceed to the counter.`;
 
-        // Speak both numbers when an update occurs
+        // Voice announcement: speak the latest called number
         if (state.lastCalled) {
-          const currentStateHash = JSON.stringify(state);
+          const voiceText = `Now serving ${state.lastCalled.type} Number ${state.lastCalled.number}. Please proceed to the counter.`;
+          
+          const currentStateHash = JSON.stringify(state.lastCalled);
           if (lastStateHash !== currentStateHash) {
-            speakAnnouncement(fullAnnouncement);
+            speakAnnouncement(voiceText);
             lastStateHash = currentStateHash;
           }
         }
