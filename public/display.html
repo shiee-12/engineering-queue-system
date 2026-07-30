@@ -57,11 +57,10 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    let lastStateHash = null;
 
     function speakAnnouncement(text) {
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Clears any active voice clip smoothly before speaking new audio
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.9;
         utterance.pitch = 1.0;
@@ -72,10 +71,8 @@
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen();
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen();
       }
     }
 
@@ -84,6 +81,7 @@
       const prioDisplay = document.getElementById('prio-num-display');
       const banner = document.getElementById('announcement-banner');
 
+      // Update Screen Display Numbers
       if (state.regular > 0) {
         regDisplay.innerHTML = state.regular;
         regDisplay.classList.remove('regular-box');
@@ -98,7 +96,7 @@
         prioDisplay.innerHTML = '<div class="number-box priority-box"></div>';
       }
 
-      // Display Banner Text
+      // Update Screen Banner Text
       let servingParts = [];
       if (state.regular > 0) servingParts.push(`Regular Number ${state.regular}`);
       if (state.priority > 0) servingParts.push(`Priority Number ${state.priority}`);
@@ -109,18 +107,30 @@
         banner.innerText = "Waiting for the next number...";
       }
 
-      // Voice Announcement Handling
+      // Voice Logic Handling based on precise action triggered
       if (state.lastCalled) {
+        const { type, number, action } = state.lastCalled;
         let voiceText = "";
-        if (state.lastCalled.action === 'recall') {
-          voiceText = `Again, calling for ${state.lastCalled.type} Number ${state.lastCalled.number}. Please proceed to the counter.`;
-        } else {
-          voiceText = `Now serving ${state.lastCalled.type} Number ${state.lastCalled.number}. Please proceed to the counter.`;
+
+        if (action === 'recall') {
+          // Check if both lines are active during recall
+          let recallParts = [];
+          if (state.regular > 0) recallParts.push(`Regular Number ${state.regular}`);
+          if (state.priority > 0) recallParts.push(`Priority Number ${state.priority}`);
+
+          if (recallParts.length > 1) {
+            voiceText = `Again, calling for ${recallParts.join(' and ')}. Please proceed to the counter.`;
+          } else {
+            voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
+          }
+        } else if (action === 'call' || action === 'skip') {
+          // Strictly call ONLY the queue line that was just pressed
+          voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
         }
 
-        const currentStateHash = JSON.stringify(state.lastCalled) + Date.now(); 
-        // Trigger voice on every new action push
-        speakAnnouncement(voiceText);
+        if (voiceText) {
+          speakAnnouncement(voiceText);
+        }
       }
     });
   </script>
