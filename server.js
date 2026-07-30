@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
     } else if (action === 'resetPriority') {
       queueState.priority = 0;
     } else if (queueType === 'regular') {
-      if (action === 'next' || action === 'skip') {
+      if (action === 'next') {
         queueState.regular = queueState.regular >= 20 ? 1 : queueState.regular + 1;
         queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: action, timestamp: now };
       } else if (action === 'recall' && queueState.regular > 0) {
@@ -48,7 +48,7 @@ io.on('connection', (socket) => {
         }
       }
     } else if (queueType === 'priority') {
-      if (action === 'next' || action === 'skip') {
+      if (action === 'next') {
         queueState.priority = queueState.priority >= 20 ? 1 : queueState.priority + 1;
         queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: action, timestamp: now };
       } else if (action === 'recall' && queueState.priority > 0) {
