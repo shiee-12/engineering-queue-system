@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
+  <!-- Title Google shows in search results -->
   <title>Engineering Queue Management System | Municipality of Naic</title>
+  
+  <!-- Description Google displays under the title -->
   <meta name="description" content="Official Queue Management System for the Engineering Office, Municipality of Naic, Cavite. View live serving numbers for Regular and Priority lines.">
   <meta name="keywords" content="Queue System: Municipality of Naic - Engineering Office">
   <link rel="stylesheet" href="style.css">
@@ -49,7 +52,7 @@
             <button class="btn btn-outline" onclick="sendAction('recall', 'regular')">Recall</button>
           </div>
 
-          <button class="btn btn-red reset-single-btn" onclick="sendAction('resetRegular', 'regular')">Reset Regular Queue</button>
+          <button class="btn btn-red reset-single-btn" onclick="sendAction('resetRegular')">Reset Regular Queue</button>
         </div>
       </div>
 
@@ -73,13 +76,13 @@
             <button class="btn btn-outline" onclick="sendAction('recall', 'priority')">Recall</button>
           </div>
 
-          <button class="btn btn-red reset-single-btn" onclick="sendAction('resetPriority', 'priority')">Reset Priority Queue</button>
+          <button class="btn btn-red reset-single-btn" onclick="sendAction('resetPriority')">Reset Priority Queue</button>
         </div>
       </div>
     </div>
 
     <div class="reset-all-container">
-      <button class="btn btn-red reset-all-btn" onclick="sendAction('resetBoth', '')">Reset Both Queues</button>
+      <button class="btn btn-red reset-all-btn" onclick="sendAction('resetBoth')">Reset Both Queues</button>
     </div>
   </main>
 
@@ -91,7 +94,7 @@
     const prioSelect = document.getElementById('prio-select');
 
     // Populate dropdown options once
-    if (regSelect && regSelect.options.length <= 1) {
+    if (regSelect.options.length <= 1) {
       for (let i = 1; i <= 20; i++) {
         regSelect.innerHTML += `<option value="${i}">${i}</option>`;
         prioSelect.innerHTML += `<option value="${i}">${i}</option>`;
@@ -105,13 +108,14 @@
     function manualSelect(queueType, val) {
       if (val) {
         socket.emit('queueAction', { action: 'manual', queueType, manualNumber: val });
-        // Reset select box immediately
+        // Instantly reset select box back to blank state without loading lag
         if (queueType === 'regular') regSelect.selectedIndex = 0;
         if (queueType === 'priority') prioSelect.selectedIndex = 0;
       }
     }
 
     socket.on('stateUpdate', (state) => {
+      // Update Now Serving Labels on Controller UI
       const regElem = document.getElementById('reg-serving-num');
       const prioElem = document.getElementById('prio-serving-num');
       
