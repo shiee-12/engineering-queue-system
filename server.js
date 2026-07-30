@@ -7,7 +7,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Serve static assets from the "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Route root URL '/' directly to display.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'display.html'));
+});
 
 // Global state holding queue data
 let queueState = {
