@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Controller | Engineering Office</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="logo-container">
+      <div class="logo-placeholder">LOGO</div>
+      <div class="office-info">
+        <h2>Municipality of Naic - Engineering Office</h2>
+        <p>Ibayo Silangan, Naic, Cavite</p>
+      </div>
+    </div>
+    <div class="nav-buttons">
+      <a href="controller.html" class="nav-btn active">Controller</a>
+      <a href="display.html" class="nav-btn outline">Display</a>
+    </div>
+  </header>
+
+  <main>
+    <h1 class="page-title">Queue Controller</h1>
+
+    <div class="grid-container">
+      <!-- Regular Queue Panel -->
+      <div class="panel">
+        <div class="panel-header regular">Regular Queue</div>
+        <div class="panel-body">
+          <div class="serving-label">NOW SERVING</div>
+          <div class="number-display" id="reg-serving-num">-</div>
+
+          <div class="select-container">
+            <label for="reg-select">Select Number:</label>
+            <select id="reg-select" onchange="manualSelect('regular', this.value)">
+              <option value="">--</option>
+            </select>
+          </div>
+
+          <div class="controls-row">
+            <button class="btn btn-navy" onclick="sendAction('next', 'regular')">Next</button>
+            <button class="btn btn-outline" onclick="sendAction('skip', 'regular')">Skip</button>
+            <button class="btn btn-outline" onclick="sendAction('recall', 'regular')">Recall</button>
+          </div>
+
+          <button class="btn btn-red reset-single-btn" onclick="sendAction('resetRegular')">Reset Regular Queue</button>
+        </div>
+      </div>
+
+      <!-- Priority Queue Panel -->
+      <div class="panel">
+        <div class="panel-header priority">Priority Queue</div>
+        <div class="panel-body">
+          <div class="serving-label">NOW SERVING</div>
+          <div class="number-display" id="prio-serving-num">-</div>
+
+          <div class="select-container">
+            <label for="prio-select">Select Number:</label>
+            <select id="prio-select" onchange="manualSelect('priority', this.value)">
+              <option value="">--</option>
+            </select>
+          </div>
+
+          <div class="controls-row">
+            <button class="btn btn-gold" onclick="sendAction('next', 'priority')">Next</button>
+            <button class="btn btn-outline" onclick="sendAction('skip', 'priority')">Skip</button>
+            <button class="btn btn-outline" onclick="sendAction('recall', 'priority')">Recall</button>
+          </div>
+
+          <button class="btn btn-red reset-single-btn" onclick="sendAction('resetPriority')">Reset Priority Queue</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="reset-all-container">
+      <button class="btn btn-red reset-all-btn" onclick="sendAction('resetBoth')">Reset Both Queues</button>
+    </div>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // Populate selects 1 to 20
+    const regSelect = document.getElementById('reg-select');
+    const prioSelect = document.getElementById('prio-select');
+
+    for (let i = 1; i <= 20; i++) {
+      regSelect.innerHTML += `<option value="${i}">${i}</option>`;
+      prioSelect.innerHTML += `<option value="${i}">${i}</option>`;
+    }
+
+    function sendAction(action, queueType) {
+      socket.emit('queueAction', { action, queueType });
+    }
+
+    function manualSelect(queueType, val) {
+      if (val) {
+        socket.emit('queueAction', { action: 'manual', queueType, manualNumber: val });
+      }
+    }
+
+    socket.on('stateUpdate', (state) => {
+      document.getElementById('reg-serving-num').innerText = state.regular > 0 ? state.regular : '-';
+      document.getElementById('prio-serving-num').innerText = state.priority > 0 ? state.priority : '-';
+      regSelect.value = "";
+      prioSelect.value = "";
+    });
+  </script>
+</body>
+</html>

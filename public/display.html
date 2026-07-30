@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display Screen | Engineering Office</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="logo-container">
+      <div class="logo-placeholder">LOGO</div>
+      <div class="office-info">
+        <h2>Municipality of Naic - Engineering Office</h2>
+        <p>Ibayo Silangan, Naic, Cavite</p>
+      </div>
+    </div>
+    <div class="nav-buttons">
+      <a href="controller.html" class="nav-btn outline">Controller</a>
+      <a href="display.html" class="nav-btn active">Display</a>
+      <button class="nav-btn outline" onclick="toggleFullscreen()">Fullscreen</button>
+    </div>
+  </header>
+
+  <main>
+    <h1 class="display-header-text">Now Serving</h1>
+
+    <div class="grid-container">
+      <!-- Regular Line Panel -->
+      <div class="panel display-panel">
+        <div class="panel-header regular">REGULAR LINE</div>
+        <div class="display-panel-body">
+          <div id="reg-num-display" class="number-text">-</div>
+        </div>
+      </div>
+
+      <!-- Priority Line Panel -->
+      <div class="panel display-panel">
+        <div class="panel-header priority">PRIORITY LINE</div>
+        <div class="display-panel-body">
+          <div id="prio-num-display" class="number-text">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-banner" id="announcement-banner">
+      Waiting for the next number...
+    </div>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let lastStateHash = null;
+
+    function speakAnnouncement(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop current speech if any
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    socket.on('stateUpdate', (state) => {
+      // Update Numbers Display
+      const regDisplay = document.getElementById('reg-num-display');
+      const prioDisplay = document.getElementById('prio-num-display');
+      const banner = document.getElementById('announcement-banner');
+
+      if (state.regular > 0) {
+        regDisplay.innerHTML = state.regular;
+        regDisplay.classList.remove('regular-box');
+      } else {
+        regDisplay.innerHTML = '<div class="number-box regular-box"></div>';
+      }
+
+      if (state.priority > 0) {
+        prioDisplay.innerHTML = state.priority;
+        prioDisplay.classList.remove('priority-box');
+      } else {
+        prioDisplay.innerHTML = '<div class="number-box priority-box"></div>';
+      }
+
+      // Voice Announcement Handling
+      if (state.lastCalled) {
+        const text = `Now serving ${state.lastCalled.type} Number${state.lastCalled.number}. Please proceed to the counter.`;
+        
+        // Prevent duplicate trigger on initial page connect
+        const currentStateHash = JSON.stringify(state.lastCalled);
+        if (lastStateHash !== currentStateHash) {
+          banner.innerText = text;
+          speakAnnouncement(text);
+          lastStateHash = currentStateHash;
+        }
+      } else {
+        banner.innerText = "Waiting for the next number...";
+      }
+    });
+  </script>
+</body>
+</html>
