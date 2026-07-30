@@ -1,8 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Display Screen | Engineering Office</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -93,16 +91,28 @@
         prioDisplay.innerHTML = '<div class="number-box priority-box"></div>';
       }
 
-      // Voice Announcement Handling
-      if (state.lastCalled) {
-        const text = `Now serving ${state.lastCalled.type} Number${state.lastCalled.number}. Please proceed to the counter.`;
-        
-        // Prevent duplicate trigger on initial page connect
-        const currentStateHash = JSON.stringify(state.lastCalled);
-        if (lastStateHash !== currentStateHash) {
-          banner.innerText = text;
-          speakAnnouncement(text);
-          lastStateHash = currentStateHash;
+      // Build text for all active numbers currently being served
+      let servingParts = [];
+      if (state.regular > 0) {
+        servingParts.push(`Regular Number ${state.regular}`);
+      }
+      if (state.priority > 0) {
+        servingParts.push(`Priority Number ${state.priority}`);
+      }
+
+      if (servingParts.length > 0) {
+        // Update bottom banner text to show all currently active numbers
+        banner.innerText = `Now serving ${servingParts.join(' and ')}. Please proceed to the counter.`;
+
+        // Voice announcement: speak the latest called number
+        if (state.lastCalled) {
+          const voiceText = `Now serving ${state.lastCalled.type} Number ${state.lastCalled.number}. Please proceed to the counter.`;
+          
+          const currentStateHash = JSON.stringify(state.lastCalled);
+          if (lastStateHash !== currentStateHash) {
+            speakAnnouncement(voiceText);
+            lastStateHash = currentStateHash;
+          }
         }
       } else {
         banner.innerText = "Waiting for the next number...";
