@@ -108,8 +108,16 @@
     function manualSelect(queueType, val) {
       if (val) {
         socket.emit('queueAction', { action: 'manual', queueType, manualNumber: val });
-        if (queueType === 'regular') regSelect.selectedIndex = 0;
-        if (queueType === 'priority') prioSelect.selectedIndex = 0;
+        
+        // Unfocus and reset dropdown instantly so UI updates without loading lag
+        if (queueType === 'regular') {
+          regSelect.selectedIndex = 0;
+          regSelect.blur();
+        }
+        if (queueType === 'priority') {
+          prioSelect.selectedIndex = 0;
+          prioSelect.blur();
+        }
       }
     }
 

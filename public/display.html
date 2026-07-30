@@ -61,12 +61,14 @@
     let speechQueue = [];
     let isSpeaking = false;
 
-    // Fix browser speech engine freezing WITHOUT re-triggering audio
+    // Wake up/unfreeze browser speech synth every 3 seconds
     setInterval(() => {
-      if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-        window.speechSynthesis.resume();
+      if ('speechSynthesis' in window) {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
       }
-    }, 5000);
+    }, 3000);
 
     function processSpeechQueue() {
       if (isSpeaking || speechQueue.length === 0) return;
@@ -75,6 +77,8 @@
       isSpeaking = true;
       const nextText = speechQueue.shift();
 
+      // Explicitly unpause and cancel stuck speech before playing
+      window.speechSynthesis.resume();
       window.speechSynthesis.cancel(); 
 
       const utterance = new SpeechSynthesisUtterance(nextText);
@@ -83,12 +87,12 @@
 
       utterance.onend = () => {
         isSpeaking = false;
-        setTimeout(processSpeechQueue, 100);
+        setTimeout(processSpeechQueue, 50);
       };
 
       utterance.onerror = () => {
         isSpeaking = false;
-        setTimeout(processSpeechQueue, 100);
+        setTimeout(processSpeechQueue, 50);
       };
 
       window.speechSynthesis.speak(utterance);
