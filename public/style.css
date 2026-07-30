@@ -200,14 +200,14 @@ main {
 
 /* Control Buttons */
 .controls-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Split equally into 2 columns */
-  gap: 12px;                      /* Space between Next and Recall */
+  display: flex;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
 .controls-row .btn {
-  width: 100%;                     /* Stretch buttons to fill column */
+  flex: 1;                         /* Both buttons grow equally */
+  width: 100%;
 }
 
 .btn {
