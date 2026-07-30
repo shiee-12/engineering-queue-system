@@ -40,9 +40,12 @@ io.on('connection', (socket) => {
         queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: action, timestamp: now };
       } else if (action === 'recall' && queueState.regular > 0) {
         queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: 'recall', timestamp: now };
-      } else if (action === 'manual' && manualNumber) {
-        queueState.regular = parseInt(manualNumber, 10);
-        queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: 'call', timestamp: now };
+      } else if (action === 'manual' && manualNumber !== undefined && manualNumber !== null) {
+        const parsedNum = parseInt(manualNumber, 10);
+        if (!isNaN(parsedNum)) {
+          queueState.regular = parsedNum;
+          queueState.lastCalled = { type: 'Regular', number: queueState.regular, action: 'call', timestamp: now };
+        }
       }
     } else if (queueType === 'priority') {
       if (action === 'next' || action === 'skip') {
@@ -50,9 +53,12 @@ io.on('connection', (socket) => {
         queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: action, timestamp: now };
       } else if (action === 'recall' && queueState.priority > 0) {
         queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: 'recall', timestamp: now };
-      } else if (action === 'manual' && manualNumber) {
-        queueState.priority = parseInt(manualNumber, 10);
-        queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: 'call', timestamp: now };
+      } else if (action === 'manual' && manualNumber !== undefined && manualNumber !== null) {
+        const parsedNum = parseInt(manualNumber, 10);
+        if (!isNaN(parsedNum)) {
+          queueState.priority = parsedNum;
+          queueState.lastCalled = { type: 'Priority', number: queueState.priority, action: 'call', timestamp: now };
+        }
       }
     }
 
