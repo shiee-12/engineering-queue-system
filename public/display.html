@@ -56,19 +56,27 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+    // Force websocket transport for instant updates across devices
+    const socket = io({ transports: ['websocket', 'polling'] });
 
     let speechQueue = [];
     let isSpeaking = false;
+    let audioUnlocked = false;
 
-    // Wake up/unfreeze browser speech synth every 3 seconds
-    setInterval(() => {
+    // Unlock Browser Speech API on first user interaction
+    document.addEventListener('click', () => {
       if ('speechSynthesis' in window) {
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
-        }
+        window.speechSynthesis.resume();
+        audioUnlocked = true;
       }
-    }, 3000);
+    }, { once: true });
+
+    // Unfreeze speech engine if tab was running in the background
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && 'speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+      }
+    });
 
     function processSpeechQueue() {
       if (isSpeaking || speechQueue.length === 0) return;
@@ -77,9 +85,7 @@
       isSpeaking = true;
       const nextText = speechQueue.shift();
 
-      // Explicitly unpause and cancel stuck speech before playing
       window.speechSynthesis.resume();
-      window.speechSynthesis.cancel(); 
 
       const utterance = new SpeechSynthesisUtterance(nextText);
       utterance.rate = 0.9;
@@ -103,14 +109,6 @@
       processSpeechQueue();
     }
 
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-      } else if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-
     let lastActionTimestamp = null;
 
     socket.on('stateUpdate', (state) => {
@@ -118,19 +116,21 @@
       const prioDisplay = document.getElementById('prio-num-display');
       const banner = document.getElementById('announcement-banner');
 
-      // Update Screen Display Numbers
-      if (state.regular > 0) {
-        regDisplay.innerHTML = state.regular;
-        regDisplay.classList.remove('regular-box');
-      } else {
-        regDisplay.innerHTML = '<div class="number-box regular-box"></div>';
+      // Update Screen Display Numbers Instantly
+      if (regDisplay) {
+        if (state.regular > 0) {
+          regDisplay.innerText = state.regular;
+        } else {
+          regDisplay.innerText = '-';
+        }
       }
 
-      if (state.priority > 0) {
-        prioDisplay.innerHTML = state.priority;
-        prioDisplay.classList.remove('priority-box');
-      } else {
-        prioDisplay.innerHTML = '<div class="number-box priority-box"></div>';
+      if (prioDisplay) {
+        if (state.priority > 0) {
+          prioDisplay.innerText = state.priority;
+        } else {
+          prioDisplay.innerText = '-';
+        }
       }
 
       // Update Screen Banner Text
@@ -144,7 +144,7 @@
         banner.innerText = "Waiting for the next number...";
       }
 
-      // Handle Voice Announcements (Triggers ONLY once per unique click timestamp)
+      // Voice Logic
       if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
         lastActionTimestamp = state.lastCalled.timestamp;
         const { type, number, action } = state.lastCalled;
@@ -153,7 +153,7 @@
 
         if (action === 'recall') {
           voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
-        } else if (action === 'next' || action === 'skip' || action === 'call') {
+        } else if (action === 'next' || action === 'call') {
           voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
         }
 
