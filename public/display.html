@@ -55,148 +55,113 @@
   </main>
 
   <script src="/socket.io/socket.io.js"></script>
-<script>
-  // Force websocket transport for instant updates across devices
-  const socket = io({ transports: ['websocket', 'polling'] });
+  <script>
+    // Force websocket transport for instant updates across devices
+    const socket = io({ transports: ['websocket', 'polling'] });
 
-  let speechQueue = [];
-  let isSpeaking = false;
-  let audioUnlocked = false;
-  let selectedMaleVoice = null;
+    let speechQueue = [];
+    let isSpeaking = false;
+    let audioUnlocked = false;
 
-  // Search system voices and select a male voice across OS platforms
-  function loadMaleVoice() {
-    if (!('speechSynthesis' in window)) return;
-    
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) return;
+    // Unlock Browser Speech API on first user interaction
+    document.addEventListener('click', () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+        audioUnlocked = true;
+      }
+    }, { once: true });
 
-    // Look for known system male voice keywords across Windows, Mac, iOS, Android
-    const maleKeywords = ['david', 'mark', 'george', 'daniel', 'arthur', 'male', 'google uk english male', 'alex'];
-
-    selectedMaleVoice = voices.find(voice => {
-      const nameLower = voice.name.toLowerCase();
-      return maleKeywords.some(keyword => nameLower.includes(keyword)) && voice.lang.startsWith('en');
+    // Unfreeze speech engine if tab was running in the background
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && 'speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+      }
     });
 
-    // Fallback: If no explicit male voice is found by name, pick any English voice
-    if (!selectedMaleVoice) {
-      selectedMaleVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
-    }
-  }
+    function processSpeechQueue() {
+      if (isSpeaking || speechQueue.length === 0) return;
+      if (!('speechSynthesis' in window)) return;
 
-  // Handle asynchronous voice loading in Chrome / Android
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.onvoiceschanged = loadMaleVoice;
-    loadMaleVoice();
-  }
+      isSpeaking = true;
+      const nextText = speechQueue.shift();
 
-  // Unlock Browser Speech API on first user interaction
-  document.addEventListener('click', () => {
-    if ('speechSynthesis' in window) {
       window.speechSynthesis.resume();
-      audioUnlocked = true;
-    }
-  }, { once: true });
 
-  // Unfreeze speech engine if tab was running in the background
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && 'speechSynthesis' in window) {
-      window.speechSynthesis.resume();
-    }
-  });
+      const utterance = new SpeechSynthesisUtterance(nextText);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
 
-  function processSpeechQueue() {
-    if (isSpeaking || speechQueue.length === 0) return;
-    if (!('speechSynthesis' in window)) return;
+      utterance.onend = () => {
+        isSpeaking = false;
+        setTimeout(processSpeechQueue, 50);
+      };
 
-    isSpeaking = true;
-    const nextText = speechQueue.shift();
+      utterance.onerror = () => {
+        isSpeaking = false;
+        setTimeout(processSpeechQueue, 50);
+      };
 
-    window.speechSynthesis.resume();
-
-    const utterance = new SpeechSynthesisUtterance(nextText);
-    utterance.rate = 0.9;
-    
-    // Lower pitch slightly to enforce a deeper male tone on fallback voices
-    utterance.pitch = 0.88;
-
-    // Assign the selected male voice object
-    if (selectedMaleVoice) {
-      utterance.voice = selectedMaleVoice;
+      window.speechSynthesis.speak(utterance);
     }
 
-    utterance.onend = () => {
-      isSpeaking = false;
-      setTimeout(processSpeechQueue, 50);
-    };
+    function speakAnnouncement(text) {
+      speechQueue.push(text);
+      processSpeechQueue();
+    }
 
-    utterance.onerror = () => {
-      isSpeaking = false;
-      setTimeout(processSpeechQueue, 50);
-    };
+    let lastActionTimestamp = null;
 
-    window.speechSynthesis.speak(utterance);
-  }
+    socket.on('stateUpdate', (state) => {
+      const regDisplay = document.getElementById('reg-num-display');
+      const prioDisplay = document.getElementById('prio-num-display');
+      const banner = document.getElementById('announcement-banner');
 
-  function speakAnnouncement(text) {
-    speechQueue.push(text);
-    processSpeechQueue();
-  }
+      // Update Screen Display Numbers Instantly
+      if (regDisplay) {
+        if (state.regular > 0) {
+          regDisplay.innerText = state.regular;
+        } else {
+          regDisplay.innerText = '-';
+        }
+      }
 
-  let lastActionTimestamp = null;
+      if (prioDisplay) {
+        if (state.priority > 0) {
+          prioDisplay.innerText = state.priority;
+        } else {
+          prioDisplay.innerText = '-';
+        }
+      }
 
-  socket.on('stateUpdate', (state) => {
-    const regDisplay = document.getElementById('reg-num-display');
-    const prioDisplay = document.getElementById('prio-num-display');
-    const banner = document.getElementById('announcement-banner');
+      // Update Screen Banner Text
+      let servingParts = [];
+      if (state.regular > 0) servingParts.push(`Regular Number ${state.regular}`);
+      if (state.priority > 0) servingParts.push(`Priority Number ${state.priority}`);
 
-    // Update Screen Display Numbers Instantly
-    if (regDisplay) {
-      if (state.regular > 0) {
-        regDisplay.innerText = state.regular;
+      if (servingParts.length > 0) {
+        banner.innerText = `Now serving ${servingParts.join(' and ')}. Please proceed to the counter.`;
       } else {
-        regDisplay.innerText = '-';
-      }
-    }
-
-    if (prioDisplay) {
-      if (state.priority > 0) {
-        prioDisplay.innerText = state.priority;
-      } else {
-        prioDisplay.innerText = '-';
-      }
-    }
-
-    // Update Screen Banner Text
-    let servingParts = [];
-    if (state.regular > 0) servingParts.push(`Regular Number ${state.regular}`);
-    if (state.priority > 0) servingParts.push(`Priority Number ${state.priority}`);
-
-    if (servingParts.length > 0) {
-      banner.innerText = `Now serving ${servingParts.join(' and ')}. Please proceed to the counter.`;
-    } else {
-      banner.innerText = "Waiting for the next number...";
-    }
-
-    // Voice Logic
-    if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
-      lastActionTimestamp = state.lastCalled.timestamp;
-      const { type, number, action } = state.lastCalled;
-      
-      let voiceText = "";
-
-      if (action === 'recall') {
-        voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
-      } else if (action === 'next' || action === 'call') {
-        voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
+        banner.innerText = "Waiting for the next number...";
       }
 
-      if (voiceText) {
-        speakAnnouncement(voiceText);
+      // Voice Logic
+      if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
+        lastActionTimestamp = state.lastCalled.timestamp;
+        const { type, number, action } = state.lastCalled;
+        
+        let voiceText = "";
+
+        if (action === 'recall') {
+          voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
+        } else if (action === 'next' || action === 'call') {
+          voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
+        }
+
+        if (voiceText) {
+          speakAnnouncement(voiceText);
+        }
       }
-    }
-  });
-</script>
+    });
+  </script>
 </body>
 </html>
