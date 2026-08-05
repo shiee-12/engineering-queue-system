@@ -78,6 +78,29 @@
       }
     });
 
+    // Cross-browser Fullscreen Toggle
+  function toggleFullscreen() {
+    const doc = document;
+    const docEl = doc.documentElement;
+
+    const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+    const exitFS = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+
+    const isFullscreen = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+    if (!isFullscreen) {
+      if (requestFS) {
+        requestFS.call(docEl).catch(err => {
+          console.warn(`Fullscreen request failed: ${err.message}`);
+        });
+      }
+    } else {
+      if (exitFS) {
+        exitFS.call(doc);
+      }
+    }
+  }
+
     function processSpeechQueue() {
       if (isSpeaking || speechQueue.length === 0) return;
       if (!('speechSynthesis' in window)) return;
