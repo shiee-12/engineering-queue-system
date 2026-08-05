@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Title Google shows in search results -->
-  <title>Engineering Queue Management System | Municipality of Naic</title>
+  <title>Engineering Queuing System | Municipality of Naic</title>
   
   <!-- Description Google displays under the title -->
-  <meta name="description" content="Official Queue Management System for the Engineering Office, Municipality of Naic, Cavite. View live serving numbers for Regular and Priority lines.">
-  <meta name="keywords" content="Queue System: Municipality of Naic - Engineering Office">
+  <meta name="description" content="Queuing Management System for the Engineering Office, Municipality of Naic, Cavite. View live serving numbers for Regular and Priority lines.">
+  <meta name="keywords" content="Engineering Queuing System">
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -93,7 +93,7 @@
     const regElem = document.getElementById('reg-serving-num');
     const prioElem = document.getElementById('prio-serving-num');
 
-    // Populate dropdown options instantly (1-20)
+    // dropdown(1-20)
     if (regSelect && regSelect.options.length <= 1) {
       for (let i = 1; i <= 20; i++) {
         regSelect.innerHTML += `<option value="${i}">${i}</option>`;
