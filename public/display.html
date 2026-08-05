@@ -11,6 +11,13 @@
   <meta name="description" content="Queuing Management System for the Engineering Office, Municipality of Naic, Cavite. View live serving numbers for Regular and Priority lines.">
   <meta name="keywords" content="Engineering Queuing System">
   <link rel="stylesheet" href="style.css">
+
+  <!-- Prefetch opposite page for instant switching -->
+  <link rel="prefetch" href="controller.html" as="document">
+  <link rel="prefetch" href="display.html" as="document">
+
+  <!-- Pre-connect to Socket.io resources -->
+  <link rel="preconnect" href="https://cdn.socket.io">
 </head>
 <body>
   <header>
