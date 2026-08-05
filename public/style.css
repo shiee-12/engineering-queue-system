@@ -252,7 +252,7 @@ main {
 }
 
 .reset-single-btn {
-  width: 50%;
+  width: 100%;
   margin-top: 5px;
 }
 
@@ -317,20 +317,79 @@ main {
   font-size: 1.2rem;
 }
 
+/* Mobile Responsive Layout Adjustments */
 @media (max-width: 768px) {
-  .grid-container {
-    grid-template-columns: 1fr;
-  }
-  
+  /* Stack Header vertically on small screens */
   header {
-    padding: 10px 15px;
-  }
-  
-  main {
+    flex-direction: column;
     padding: 15px;
+    gap: 15px;
+    text-align: center;
   }
 
-  .reset-single-btn, .reset-all-btn {
+  .logo-container {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .office-info h2 {
+    font-size: 1rem;
+  }
+
+  .office-info p {
+    font-size: 0.75rem;
+  }
+
+  .nav-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nav-btn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 16px;
+  }
+
+  main {
+    padding: 15px 12px;
+  }
+
+  .page-title, 
+  .display-header-text {
+    font-size: 1.4rem;
+    text-align: center;
+  }
+
+  .grid-container {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .panel-body {
+    padding: 18px 12px;
+  }
+
+  .number-display {
+    font-size: 3rem;
+  }
+
+  .controls-row {
+    gap: 8px;
+  }
+
+  .reset-single-btn, 
+  .reset-all-btn {
+    width: 100%;
+  }
+
+  .landing-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-landing {
     width: 100%;
   }
 }
