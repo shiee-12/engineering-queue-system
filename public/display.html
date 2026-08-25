@@ -81,46 +81,72 @@
     const socket = io({ transports: ['websocket'], upgrade: false });
 
     let speechQueue = [];
-let isSpeaking = false;
+    let isSpeaking = false;
+    let audioUnlocked = false;
 
-function speakAnnouncement(text) {
-  if (!('speechSynthesis' in window)) return;
+    // Unlock Browser Speech API on first user interaction
+    document.addEventListener('click', () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+        audioUnlocked = true;
+      }
+    }, { once: true });
 
-  // 1. Immediately stop any current speech and clear the pending queue
-  window.speechSynthesis.cancel();
-  speechQueue = [];
+    // Unfreeze speech engine if tab was running in the background
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && 'speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+      }
+    });
 
-  // 2. Add only the latest number to the queue
-  speechQueue.push(text);
-  
-  // 3. Play immediately
-  processSpeechQueue();
-}
+      // Cross-browser Fullscreen Toggle
+  function toggleFullscreen() {
+    const doc = document;
+    const docEl = doc.documentElement;
 
-function processSpeechQueue() {
-  if (speechQueue.length === 0 || !('speechSynthesis' in window)) return;
+    const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+    const exitFS = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
 
-  const nextText = speechQueue.shift();
-  window.speechSynthesis.resume();
+    const isFullscreen = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
 
-  const utterance = new SpeechSynthesisUtterance(nextText);
-  utterance.rate = 1.0; // Slightly faster speed for rapid calls
-  utterance.pitch = 1.0;
-
-  utterance.onend = () => {
-    if (speechQueue.length > 0) {
-      setTimeout(processSpeechQueue, 50);
+    if (!isFullscreen) {
+      if (requestFS) {
+        requestFS.call(docEl).catch(err => {
+          console.warn(`Fullscreen request failed: ${err.message}`);
+        });
+      }
+    } else {
+      if (exitFS) {
+        exitFS.call(doc);
+      }
     }
-  };
+  }
 
-  utterance.onerror = () => {
-    if (speechQueue.length > 0) {
-      setTimeout(processSpeechQueue, 50);
+    function processSpeechQueue() {
+      if (isSpeaking || speechQueue.length === 0) return;
+      if (!('speechSynthesis' in window)) return;
+
+      isSpeaking = true;
+      const nextText = speechQueue.shift();
+
+      window.speechSynthesis.resume();
+
+      const utterance = new SpeechSynthesisUtterance(nextText);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+
+      utterance.onend = () => {
+        isSpeaking = false;
+        setTimeout(processSpeechQueue, 50);
+      };
+
+      utterance.onerror = () => {
+        isSpeaking = false;
+        setTimeout(processSpeechQueue, 50);
+      };
+
+      window.speechSynthesis.speak(utterance);
     }
-  };
-
-  window.speechSynthesis.speak(utterance);
-}
 
     function speakAnnouncement(text) {
       speechQueue.push(text);
