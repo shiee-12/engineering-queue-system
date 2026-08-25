@@ -22,7 +22,7 @@ app.use(session({
 }));
 
 // Admin Credentials
-const ADMIN_USERNAME = "naic_admin";
+const ADMIN_USERNAME = "naic_engineering";
 const ADMIN_PASSWORD_HASH = bcrypt.hashSync("Engineering2026!", 10);
 
 // Authentication Guard Middleware
