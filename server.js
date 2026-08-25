@@ -2,16 +2,88 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const session = require('express-session');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Middleware for parsing form inputs
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-app.get('/', (req, res) => {
+// Session Middleware
+app.use(session({
+  secret: 'naic-engineering-secret-key-2026',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours session
+}));
+
+// Admin Credentials
+const ADMIN_USERNAME = "naic_admin";
+const ADMIN_PASSWORD_HASH = bcrypt.hashSync("Engineering2026!", 10);
+
+// Authentication Guard Middleware
+function requireAuth(req, res, next) {
+  if (req.session && req.session.isAuthenticated) {
+    return next();
+  }
+  return res.redirect('/login');
+}
+
+// ------------------- AUTHENTICATION ROUTES -------------------
+
+// 1. Serve Login Page
+app.get('/login', (req, res) => {
+  if (req.session && req.session.isAuthenticated) {
+    return res.redirect('/');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// 2. Handle Login Form POST Request
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (username === ADMIN_USERNAME && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH)) {
+    req.session.isAuthenticated = true;
+    return res.redirect('/');
+  }
+
+  res.redirect('/login?error=invalid');
+});
+
+// 3. Handle Logout Request
+app.get('/api/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/login');
+  });
+});
+
+// Allow static assets (CSS, images) needed for the login screen
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
+app.get('/style.css', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'style.css'));
+});
+
+// ------------------- PROTECTED ROUTES -------------------
+
+// Serve Main Display Page (Protected)
+app.get('/', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'display.html'));
 });
+
+// Protect all other static files (controller.html, display.html, JS files)
+app.use(requireAuth, express.static(path.join(__dirname, 'public')));
+
+// Redirect any unhandled route back to main page or login
+app.get('*', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'display.html'));
+});
+
+// ------------------- SOCKET.IO QUEUE LOGIC -------------------
 
 let queueState = {
   regular: 0,
