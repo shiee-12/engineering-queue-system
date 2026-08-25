@@ -4,14 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- STEP 2: SESSION CHECK SCRIPT -->
  <script>
-  // 1. Check if user is authenticated in this session tab
-  if (!sessionStorage.getItem('active_session')) {
+  // 1. Check if arriving from login page or if session is already active
+  if (document.referrer.includes('login') || sessionStorage.getItem('active_session') === 'true') {
+    // Set the session flag so it persists during navigation
+    sessionStorage.setItem('active_session', 'true');
+  } else {
+    // No valid session found -> redirect to logout
     window.location.href = '/api/logout';
   }
 
-  // 2. Safe internal navigation function
+  // 2. Navigation function for switching between Controller and Display
   function navigateTo(targetPage) {
     sessionStorage.setItem('active_session', 'true');
     window.location.href = targetPage;
