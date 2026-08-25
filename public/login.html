@@ -127,11 +127,10 @@
   </main>
 
   <script>
-    // Displays error message if backend redirects back with ?error=invalid query
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('error') === 'invalid') {
-      document.getElementById('error-banner').style.display = 'block';
-    }
-  </script>
+  // Set temporary session flag on successful login submission
+  document.querySelector('form').addEventListener('submit', () => {
+    sessionStorage.setItem('active_session', 'true');
+  });
+</script>
 </body>
 </html>

@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
+  <!-- STEP 2: SESSION CHECK SCRIPT -->
+  <script>
+    if (!sessionStorage.getItem('active_session')) {
+      window.location.href = '/api/logout';
+    }
+  </script>
+
   <!-- Title Google shows in search results -->
   <title>Engineering Queuing System | Municipality of Naic</title>
   
