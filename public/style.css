@@ -68,17 +68,35 @@ header {
   font-size: 0.9rem;
   cursor: pointer;
   border: 2px solid var(--navy);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-btn.active {
   background-color: var(--gold);
   color: var(--navy);
   border-color: var(--gold);
+  box-shadow: 0 2px 6px rgba(245, 188, 37, 0.3);
+}
+
+.nav-btn.active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(245, 188, 37, 0.45);
 }
 
 .nav-btn.outline {
   background-color: transparent;
   color: var(--navy);
+}
+
+.nav-btn.outline:hover {
+  background-color: var(--navy);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(11, 34, 64, 0.25);
+}
+
+.nav-btn:active {
+  transform: translateY(0) scale(0.98);
 }
 
 /* Main Container */
@@ -223,32 +241,66 @@ main {
   cursor: pointer;
   border: none;
   text-align: center;
-  transition: opacity 0.2s;
+  /* Smooth animation curve for movement, shadow, and color */
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
 }
 
+/* Hover effect for all main buttons: lifts up and adds depth shadow */
 .btn:hover {
-  opacity: 0.9;
+  transform: translateY(-2px);
 }
 
+/* Click/Tap active state: depresses the button */
+.btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Navy Button Hover */
 .btn-navy {
   background-color: var(--navy);
   color: white;
 }
 
+.btn-navy:hover {
+  background-color: #123158;
+  box-shadow: 0 6px 16px rgba(11, 34, 64, 0.3);
+}
+
+/* Gold Button Hover */
 .btn-gold {
   background-color: var(--gold);
   color: var(--navy);
 }
 
+.btn-gold:hover {
+  background-color: #f7ca4d;
+  box-shadow: 0 6px 16px rgba(245, 188, 37, 0.4);
+}
+
+/* Outline Button Hover */
 .btn-outline {
   background-color: white;
   border: 2px solid var(--navy);
   color: var(--navy);
 }
 
+.btn-outline:hover {
+  background-color: var(--navy);
+  color: white;
+  box-shadow: 0 6px 16px rgba(11, 34, 64, 0.25);
+}
+
+/* Red Button Hover */
 .btn-red {
   background-color: var(--red);
   color: white;
+}
+
+.btn-red:hover {
+  background-color: #cf2a2a;
+  box-shadow: 0 6px 16px rgba(184, 35, 35, 0.35);
 }
 
 .reset-single-btn {
