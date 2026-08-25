@@ -9,23 +9,23 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Middleware for parsing form inputs
+// Body parser
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session Middleware (Expires when browser/tab closes + prevents caching)
+// Session Middleware
 app.use(session({
   secret: 'naic-engineering-secret-key-2026',
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: false, // Set to true if running exclusively on HTTPS
-    httpOnly: true 
-    // maxAge is deliberately removed so the cookie expires on browser close
+    secure: false, // Set to true if running strictly over HTTPS
+    httpOnly: true,
+    sameSite: 'lax'
   }
 }));
 
-// Prevent browser from caching protected pages
+// Prevent caching of authenticated pages
 app.use((req, res, next) => {
   res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
   res.header('Expires', '-1');
@@ -37,6 +37,7 @@ app.use((req, res, next) => {
 const ADMIN_USERNAME = "naic_engineering";
 const ADMIN_PASSWORD_HASH = bcrypt.hashSync("EO2026!", 10);
 
+// Authentication Middleware
 function requireAuth(req, res, next) {
   if (req.session && req.session.user) {
     return next();
@@ -44,12 +45,48 @@ function requireAuth(req, res, next) {
   res.redirect('/login.html');
 }
 
-// 1. PUBLIC ROUTES (Do NOT apply requireAuth here)
+// ------------------- PUBLIC ROUTES & ASSETS -------------------
+
+// Allow serving CSS, JS, and Images freely without blocking login
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+
+// Login Page GET
 app.get('/login.html', (req, res) => {
+  if (req.session && req.session.user) {
+    return res.redirect('/controller.html');
+  }
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// 2. PROTECTED ROUTES (Apply requireAuth here)
+// Login Form POST
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  const isUsernameValid = (username === ADMIN_USERNAME);
+  const isPasswordValid = isUsernameValid && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH);
+
+  if (isUsernameValid && isPasswordValid) {
+    req.session.user = username;
+    return res.redirect('/controller.html');
+  }
+
+  res.redirect('/login.html?error=invalid');
+});
+
+// Logout GET
+app.get('/api/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.clearCookie('connect.sid');
+    res.redirect('/login.html');
+  });
+});
+
+// ------------------- PROTECTED ROUTES -------------------
+
+app.get('/', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'controller.html'));
+});
+
 app.get('/controller.html', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'controller.html'));
 });
@@ -58,51 +95,9 @@ app.get('/display.html', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'display.html'));
 });
 
-// Handle Login Form POST Request
-app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
-
-  // 1. Verify username matches
-  const isUsernameValid = (username === ADMIN_USERNAME);
-
-  // 2. Verify hashed password matches using bcrypt
-  const isPasswordValid = isUsernameValid && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH);
-
-  if (isUsernameValid && isPasswordValid) {
-    req.session.user = username; // Establishes session
-    return res.redirect('/controller.html');
-  }
-
-  // Redirect back to login with error parameter if invalid
-  res.redirect('/login.html?error=invalid');
-});
-
-// 3. Handle Logout Request
-app.get('/api/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/login.html');
-  });
-});
-
-// Allow static assets (CSS, images) needed for the login screen
-app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
-app.get('/style.css', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'style.css'));
-});
-
-// ------------------- PROTECTED ROUTES -------------------
-
-// Serve Main Display Page (Protected)
-app.get('/', requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'display.html'));
-});
-
-// Protect all other static files (controller.html, display.html, JS files)
-app.use(requireAuth, express.static(path.join(__dirname, 'public')));
-
-// Redirect any unhandled route back to main page or login
+// Fallback for any unknown routes
 app.get('*', requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'display.html'));
+  res.redirect('/controller.html');
 });
 
 // ------------------- SOCKET.IO QUEUE LOGIC -------------------
