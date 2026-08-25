@@ -8,7 +8,7 @@
   ],
   "routes": [
     {
-      "src": "/login",
+      "src": "/(.*)",
       "dest": "server.js"
     },
     {

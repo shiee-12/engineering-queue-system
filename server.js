@@ -38,17 +38,20 @@ const ADMIN_USERNAME = "naic_engineering";
 const ADMIN_PASSWORD_HASH = bcrypt.hashSync("EO2026!", 10);
 
 // Authentication Guard Middleware
+// Auth Middleware
 function requireAuth(req, res, next) {
   if (req.session && req.session.user) {
-    return next(); // User is logged in, allow access
+    return next();
   }
-  res.redirect('/login.html'); // Not logged in, send to login
+  res.redirect('/login.html');
 }
 
-// ------------------- AUTHENTICATION ROUTES -------------------
+// 1. PUBLIC ROUTES (Do NOT apply requireAuth here)
+app.get('/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
-// 1. Serve Login Page
-// Protected HTML Routes
+// 2. PROTECTED ROUTES (Apply requireAuth here)
 app.get('/controller.html', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'controller.html'));
 });
