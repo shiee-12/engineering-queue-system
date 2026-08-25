@@ -4,24 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <script>
-  // 1. Check if the user is logged in for this tab session
-  const activeSession = sessionStorage.getItem('active_session');
-  const isLoggedIn = sessionStorage.getItem('is_logged_in');
-
-  if (!activeSession && !isLoggedIn) {
-    // Neither flag exists: user closed tab or accessed link directly -> redirect to logout
+   <!-- STEP 2: SESSION CHECK SCRIPT -->
+ <script>
+  // 1. Check if user is authenticated in this session tab
+  if (!sessionStorage.getItem('active_session')) {
     window.location.href = '/api/logout';
-  } else {
-    // Re-affirm both flags so page transitions never drop session state
-    sessionStorage.setItem('active_session', 'true');
-    sessionStorage.setItem('is_logged_in', 'true');
   }
 
   // 2. Safe internal navigation function
   function navigateTo(targetPage) {
     sessionStorage.setItem('active_session', 'true');
-    sessionStorage.setItem('is_logged_in', 'true');
     window.location.href = targetPage;
   }
 </script>
