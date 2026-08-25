@@ -127,10 +127,11 @@
   </main>
 
   <script>
-  const form = document.querySelector('form');
-  if (form) {
-    form.addEventListener('submit', () => {
+  const loginForm = document.querySelector('form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', () => {
       sessionStorage.setItem('active_session', 'true');
+      sessionStorage.setItem('is_logged_in', 'true');
     });
   }
 </script>

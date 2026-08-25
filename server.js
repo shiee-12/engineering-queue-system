@@ -48,11 +48,15 @@ function requireAuth(req, res, next) {
 // ------------------- AUTHENTICATION ROUTES -------------------
 
 // 1. Serve Login Page
-app.get('/login', (req, res) => {
-  if (req.session && req.session.isAuthenticated) {
-    return res.redirect('/');
+app.get('/api/logout', (req, res) => {
+  if (req.session) {
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid'); // Clears session cookie
+      res.redirect('/login.html');
+    });
+  } else {
+    res.redirect('/login.html');
   }
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 // 2. Handle Login Form POST Request
