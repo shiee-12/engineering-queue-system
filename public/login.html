@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin Login | Municipality of Naic - Engineering Office</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .login-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 70vh;
+      padding: 20px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      border-radius: var(--border-radius);
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      padding: 35px 30px;
+    }
+
+    .login-title {
+      color: var(--navy);
+      font-size: 1.5rem;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .login-subtitle {
+      color: #666;
+      font-size: 0.85rem;
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: var(--navy);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--navy);
+    }
+
+    .error-banner {
+      background-color: #fde8e8;
+      color: var(--red);
+      border: 1px solid var(--red);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Navbar -->
+  <header>
+    <div class="logo-container">
+      <img src="logo.png" class="office-logo" alt="Logo">
+      <div class="office-info">
+        <h2>Municipality of Naic - Engineering Office</h2>
+        <p>Ibayo Silangan, Naic, Cavite</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Login Form Container -->
+  <main class="login-wrapper">
+    <div class="login-card">
+      <h1 class="login-title">Admin Login</h1>
+      <p class="login-subtitle">Engineering Office Queue System Access</p>
+
+      <div id="error-banner" class="error-banner">
+        Invalid username or password. Please try again.
+      </div>
+
+      <form action="/api/login" method="POST">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-navy login-btn">Sign In</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    // Displays error message if backend redirects back with ?error=invalid query
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('error') === 'invalid') {
+      document.getElementById('error-banner').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
