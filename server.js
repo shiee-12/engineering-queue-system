@@ -35,7 +35,7 @@ app.use((req, res, next) => {
 
 // Admin Credentials
 const ADMIN_USERNAME = "naic_engineering";
-const ADMIN_PASSWORD_HASH = bcrypt.hashSync("Engineering2026!", 10);
+const ADMIN_PASSWORD_HASH = bcrypt.hashSync("EO2026!", 10);
 
 // Authentication Guard Middleware
 function requireAuth(req, res, next) {
