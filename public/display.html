@@ -9,6 +9,16 @@
     if (!sessionStorage.getItem('active_session')) {
       window.location.href = '/api/logout';
     }
+
+    // 2. Preserve session flag when clicking internal links (Controller / Display buttons)
+  document.addEventListener('DOMContentLoaded', () => {
+    const navLinks = document.querySelectorAll('a');
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        sessionStorage.setItem('active_session', 'true');
+      });
+    });
+  });
   </script>
 
   <!-- Title Google shows in search results -->
