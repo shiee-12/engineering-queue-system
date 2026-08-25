@@ -13,13 +13,25 @@ const io = new Server(server);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session Middleware
+// Session Middleware (Expires when browser/tab closes + prevents caching)
 app.use(session({
   secret: 'naic-engineering-secret-key-2026',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours session
+  cookie: { 
+    secure: false, // Set to true if running exclusively on HTTPS
+    httpOnly: true 
+    // maxAge is deliberately removed so the cookie expires on browser close
+  }
 }));
+
+// Prevent browser from caching protected pages
+app.use((req, res, next) => {
+  res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+  res.header('Expires', '-1');
+  res.header('Pragma', 'no-cache');
+  next();
+});
 
 // Admin Credentials
 const ADMIN_USERNAME = "naic_engineering";
