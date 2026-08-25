@@ -280,16 +280,19 @@ main {
 }
 
 /* Outline Button Hover */
+/* Outline Button Hover (Recall, etc.) */
 .btn-outline {
-  background-color: white;
+  background-color: #ffffff;
   border: 2px solid var(--navy);
   color: var(--navy);
 }
 
 .btn-outline:hover {
-  background-color: var(--navy);
-  color: white;
-  box-shadow: 0 6px 16px rgba(11, 34, 64, 0.25);
+  background-color: #f0f4f8; /* Soft light slate hover instead of blue */
+  border-color: #081a31;
+  color: #081a31;
+  box-shadow: 0 6px 14px rgba(11, 34, 64, 0.15);
+  transform: translateY(-2px);
 }
 
 /* Red Button Hover */
