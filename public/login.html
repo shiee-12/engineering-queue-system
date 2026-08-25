@@ -127,9 +127,12 @@
   </main>
 
   <script>
-  document.querySelector('form').addEventListener('submit', () => {
-    sessionStorage.setItem('active_session', 'true');
-  });
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', () => {
+      sessionStorage.setItem('active_session', 'true');
+    });
+  }
 </script>
 </body>
 </html>

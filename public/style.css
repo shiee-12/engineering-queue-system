@@ -57,11 +57,15 @@ header {
 
 .nav-buttons {
   display: flex;
+  align-items: center;
   gap: 10px;
 }
 
 .nav-btn {
-  padding: 8px 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
   border-radius: 20px;
   text-decoration: none;
   font-weight: bold;
@@ -85,6 +89,7 @@ header {
 
 .nav-btn.outline {
   background-color: transparent;
+  border: 2px solid var(--navy);
   color: var(--navy);
 }
 
@@ -96,7 +101,7 @@ header {
 }
 
 .nav-btn:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0) scale(0.96);
 }
 
 /* Main Container */

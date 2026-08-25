@@ -5,21 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- STEP 2: SESSION CHECK SCRIPT -->
-  <script>
-  // 1. Check if active session exists
+ <script>
+  // 1. Check if user is authenticated in this session tab
   if (!sessionStorage.getItem('active_session')) {
     window.location.href = '/api/logout';
-  } else {
-    // 2. Keep session alive for page transitions (Controller <-> Display)
-    sessionStorage.setItem('active_session', 'true');
   }
 
-  // 3. Re-confirm session flag whenever any link is clicked
-  window.addEventListener('pagehide', () => {
-    if (sessionStorage.getItem('active_session')) {
-      sessionStorage.setItem('active_session', 'true');
-    }
-  });
+  // 2. Safe internal navigation function
+  function navigateTo(targetPage) {
+    sessionStorage.setItem('active_session', 'true');
+    window.location.href = targetPage;
+  }
 </script>
 
   <!-- Title Google shows in search results -->
@@ -48,8 +44,8 @@
       </div>
     </div>
     <div class="nav-buttons">
-      <a href="controller.html" class="nav-btn active">Controller</a>
-      <a href="display.html" class="nav-btn outline">Display</a>
+      <button type="button" class="nav-btn outline" onclick="navigateTo('controller.html')">Controller</button>
+      <button type="button" class="nav-btn outline" onclick="navigateTo('display.html')">Display</button>
     </div>
   </header>
 
