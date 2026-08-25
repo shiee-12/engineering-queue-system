@@ -37,40 +37,50 @@ app.use((req, res, next) => {
 const ADMIN_USERNAME = "naic_engineering";
 const ADMIN_PASSWORD_HASH = bcrypt.hashSync("EO2026!", 10);
 
-// Authentication Guard Middleware
 function requireAuth(req, res, next) {
   if (req.session && req.session.user) {
-    return next(); // User is logged in, allow access
+    return next();
   }
-  res.redirect('/login.html'); // Not logged in, send to login
+  res.redirect('/login.html');
 }
 
-// ------------------- AUTHENTICATION ROUTES -------------------
-
-// 1. Serve Login Page
-app.get('/login', (req, res) => {
-  if (req.session && req.session.isAuthenticated) {
-    return res.redirect('/');
-  }
+// 1. PUBLIC ROUTES (Do NOT apply requireAuth here)
+app.get('/login.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// 2. Handle Login Form POST Request
+// 2. PROTECTED ROUTES (Apply requireAuth here)
+app.get('/controller.html', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'controller.html'));
+});
+
+app.get('/display.html', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'display.html'));
+});
+
+// Handle Login Form POST Request
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
-  if (username === ADMIN_USERNAME && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH)) {
-    req.session.isAuthenticated = true;
-    return res.redirect('/');
+  // 1. Verify username matches
+  const isUsernameValid = (username === ADMIN_USERNAME);
+
+  // 2. Verify hashed password matches using bcrypt
+  const isPasswordValid = isUsernameValid && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH);
+
+  if (isUsernameValid && isPasswordValid) {
+    req.session.user = username; // Establishes session
+    return res.redirect('/controller.html');
   }
 
-  res.redirect('/login?error=invalid');
+  // Redirect back to login with error parameter if invalid
+  res.redirect('/login.html?error=invalid');
 });
 
 // 3. Handle Logout Request
 app.get('/api/logout', (req, res) => {
   req.session.destroy(() => {
-    res.redirect('/login');
+    res.redirect('/login.html');
   });
 });
 
