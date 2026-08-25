@@ -6,20 +6,21 @@
   
   <!-- STEP 2: SESSION CHECK SCRIPT -->
   <script>
-    if (!sessionStorage.getItem('active_session')) {
-      window.location.href = '/api/logout';
-    }
+  // 1. Check if active session exists
+  if (!sessionStorage.getItem('active_session')) {
+    window.location.href = '/api/logout';
+  } else {
+    // 2. Keep session alive for page transitions (Controller <-> Display)
+    sessionStorage.setItem('active_session', 'true');
+  }
 
-    // 2. Preserve session flag when clicking internal links (Controller / Display buttons)
-  document.addEventListener('DOMContentLoaded', () => {
-    const navLinks = document.querySelectorAll('a');
-    navLinks.forEach(link => {
-      link.addEventListener('click', () => {
-        sessionStorage.setItem('active_session', 'true');
-      });
-    });
+  // 3. Re-confirm session flag whenever any link is clicked
+  window.addEventListener('pagehide', () => {
+    if (sessionStorage.getItem('active_session')) {
+      sessionStorage.setItem('active_session', 'true');
+    }
   });
-  </script>
+</script>
 
   <!-- Title Google shows in search results -->
   <title>Engineering Queuing System | Municipality of Naic</title>
