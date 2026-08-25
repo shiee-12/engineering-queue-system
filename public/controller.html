@@ -107,7 +107,10 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+    const socket = io({
+  transports: ['websocket'],
+  upgrade: false
+});
 
     const regSelect = document.getElementById('reg-select');
     const prioSelect = document.getElementById('prio-select');
@@ -123,6 +126,23 @@
     }
 
     function sendAction(action, queueType) {
+      if (action === 'next') {
+        if (queueType === 'regular' && regElem) {
+          let current = parseInt(regElem.innerText, 10);
+          regElem.innerText = isNaN(current) || current >= 20 ? 1 : current + 1;
+        } else if (queueType === 'priority' && prioElem) {
+          let current = parseInt(prioElem.innerText, 10);
+          prioElem.innerText = isNaN(current) || current >= 20 ? 1 : current + 1;
+        }
+      } else if (action === 'resetRegular' && regElem) {
+        regElem.innerText = '-';
+      } else if (action === 'resetPriority' && prioElem) {
+        prioElem.innerText = '-';
+      } else if (action === 'resetBoth') {
+        if (regElem) regElem.innerText = '-';
+        if (prioElem) prioElem.innerText = '-';
+      }
+      
       // 1. Send action to server
       socket.emit('queueAction', { action, queueType });
     }

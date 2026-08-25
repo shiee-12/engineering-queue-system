@@ -78,7 +78,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     // Force websocket transport for instant updates across devices
-    const socket = io({ transports: ['websocket', 'polling'] });
+    const socket = io({ transports: ['websocket'], upgrade: false });
 
     let speechQueue = [];
     let isSpeaking = false;
