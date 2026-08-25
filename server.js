@@ -39,32 +39,35 @@ const ADMIN_PASSWORD_HASH = bcrypt.hashSync("EO2026!", 10);
 
 // Authentication Guard Middleware
 function requireAuth(req, res, next) {
-  if (req.session && req.session.isAuthenticated) {
-    return next();
+  if (req.session && req.session.user) {
+    return next(); // User is logged in, allow access
   }
-  return res.redirect('/login');
+  res.redirect('/login.html'); // Not logged in, send to login
 }
 
 // ------------------- AUTHENTICATION ROUTES -------------------
 
 // 1. Serve Login Page
-app.get('/login', (req, res) => {
-  if (req.session && req.session.isAuthenticated) {
-    return res.redirect('/');
-  }
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+// Protected HTML Routes
+app.get('/controller.html', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'controller.html'));
+});
+
+app.get('/display.html', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'display.html'));
 });
 
 // 2. Handle Login Form POST Request
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
-  if (username === ADMIN_USERNAME && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH)) {
-    req.session.isAuthenticated = true;
-    return res.redirect('/');
+  // Perform your user authentication check here
+  if (username === 'admin' && password === 'yourpassword') {
+    req.session.user = username; // Establishes session
+    return res.redirect('/controller.html');
   }
 
-  res.redirect('/login?error=invalid');
+  res.redirect('/login.html?error=invalid');
 });
 
 // 3. Handle Logout Request
