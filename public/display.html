@@ -124,7 +124,7 @@
       window.speechSynthesis.resume();
 
       const utterance = new SpeechSynthesisUtterance(nextText);
-      utterance.rate = 0.9;
+      utterance.rate = 1.5;
       utterance.pitch = 1.0;
 
       utterance.onend = () => {
