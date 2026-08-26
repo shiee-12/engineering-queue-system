@@ -72,8 +72,6 @@
     // Force websocket transport for instant updates across devices
     const socket = io({ transports: ['websocket'], upgrade: false });
 
-    let speechQueue = [];
-    let isSpeaking = false;
     let audioUnlocked = false;
 
     // Unlock Browser Speech API on first user interaction
@@ -115,34 +113,16 @@
   }
 
     function processSpeechQueue() {
-      if (isSpeaking || speechQueue.length === 0) return;
       if (!('speechSynthesis' in window)) return;
 
-      isSpeaking = true;
-      const nextText = speechQueue.shift();
-
+      window.speechSynthesis.cancel();
       window.speechSynthesis.resume();
 
       const utterance = new SpeechSynthesisUtterance(nextText);
-      utterance.rate = 1.5;
+      utterance.rate = 1.1;
       utterance.pitch = 1.0;
 
-      utterance.onend = () => {
-        isSpeaking = false;
-        setTimeout(processSpeechQueue, 50);
-      };
-
-      utterance.onerror = () => {
-        isSpeaking = false;
-        setTimeout(processSpeechQueue, 50);
-      };
-
       window.speechSynthesis.speak(utterance);
-    }
-
-    function speakAnnouncement(text) {
-      speechQueue.push(text);
-      processSpeechQueue();
     }
 
     let lastActionTimestamp = null;
