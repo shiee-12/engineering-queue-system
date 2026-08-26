@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const fs = require('fs');
 const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
@@ -34,27 +33,13 @@ app.use((req, res, next) => {
   next();
 });
 
-const CONFIG_PATH = path.join(__dirname, 'config.json');
+let currentCreds = {
+  username: 'naic_engineering',
+  passwordHash: '$2b$10$wN9QZqK4Y0U2/01nE8J1u.Y7eP6D4B92I8V1G5K0L9M2N1O0P1Q2'
+};
 
-// Helper to safely read credentials from config.json
-function getCredentials() {
-  if (fs.existsSync(CONFIG_PATH)) {
-    try {
-      const data = fs.readFileSync(CONFIG_PATH, 'utf8');
-      return JSON.parse(data);
-    } catch (err) {
-      console.error("Error reading config.json:", err);
-    }
-  }
-  return {
-    username: 'naic_engineering',
-    passwordHash: bcrypt.hashSync('EO2026!', 10)
-  };
-}
-
-// Helper to save updated credentials back to config.json
-function saveCredentials(creds) {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(creds, null, 2), 'utf8');
+if (!currentCreds.passwordHash || currentCreds.passwordHash.length < 20) {
+  currentCreds.passwordHash = bcrypt.hashSync('EO2026!', 10);
 }
 
 function requireAuth(req, res, next) {
@@ -65,7 +50,6 @@ function requireAuth(req, res, next) {
 }
 
 // ------------------- PUBLIC ROUTES & ASSETS -------------------
-
 // Allow serving CSS, JS, and Images freely without blocking login
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
@@ -101,7 +85,6 @@ app.post('/api/login', (req, res) => {
 // Reset Password Form POST
 app.post('/api/reset-password', (req, res) => {
   const { username, newPassword } = req.body;
-  const currentCreds = getCredentials();
 
   if (username !== currentCreds.username) {
     return res.redirect('/forgot-password.html?error=invalid_user');
@@ -111,11 +94,8 @@ app.post('/api/reset-password', (req, res) => {
     return res.redirect('/forgot-password.html?error=weak_password');
   }
 
-  // Hash the new password and write to config.json
-  const newHash = bcrypt.hashSync(newPassword, 10);
-  currentCreds.passwordHash = newHash;
-  saveCredentials(currentCreds);
-
+  currentCreds.passwordHash = bcrypt.hashSync(newPassword, 10);
+  
   res.redirect('/login.html?reset=success');
 });
 
