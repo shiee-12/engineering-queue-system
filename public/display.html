@@ -74,7 +74,18 @@
 
     let audioUnlocked = false;
 
-    // Unlock Browser Speech API on first user interaction
+    // 1. Pre-load voices so speech engine is ready
+    function loadVoices() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+      }
+    }
+    loadVoices();
+    if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    // 2. Unlock Browser Speech API on first user interaction anywhere on screen
     document.addEventListener('click', () => {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.resume();
@@ -89,40 +100,46 @@
       }
     });
 
-      // Cross-browser Fullscreen Toggle
-  function toggleFullscreen() {
-    const doc = document;
-    const docEl = doc.documentElement;
+    // Cross-browser Fullscreen Toggle
+    function toggleFullscreen() {
+      const doc = document;
+      const docEl = doc.documentElement;
 
-    const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-    const exitFS = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+      const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      const exitFS = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
 
-    const isFullscreen = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+      const isFullscreen = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
 
-    if (!isFullscreen) {
-      if (requestFS) {
-        requestFS.call(docEl).catch(err => {
-          console.warn(`Fullscreen request failed: ${err.message}`);
-        });
-      }
-    } else {
-      if (exitFS) {
-        exitFS.call(doc);
+      if (!isFullscreen) {
+        if (requestFS) {
+          requestFS.call(docEl).catch(err => {
+            console.warn(`Fullscreen request failed: ${err.message}`);
+          });
+        }
+      } else {
+        if (exitFS) {
+          exitFS.call(doc);
+        }
       }
     }
-  }
 
-    function processSpeechQueue() {
+    // 3. Reliable Instant Interrupt Speech Function
+    function speakAnnouncement(text) {
       if (!('speechSynthesis' in window)) return;
 
+      // Cancel current speech
       window.speechSynthesis.cancel();
-      window.speechSynthesis.resume();
 
-      const utterance = new SpeechSynthesisUtterance(nextText);
-      utterance.rate = 1.1;
-      utterance.pitch = 1.0;
+      // Small delay allows browser speech engine to reset state properly
+      setTimeout(() => {
+        window.speechSynthesis.resume();
 
-      window.speechSynthesis.speak(utterance);
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.1;
+        utterance.pitch = 1.0;
+
+        window.speechSynthesis.speak(utterance);
+      }, 50);
     }
 
     let lastActionTimestamp = null;
@@ -134,19 +151,11 @@
 
       // Update Screen Display Numbers Instantly
       if (regDisplay) {
-        if (state.regular > 0) {
-          regDisplay.innerText = state.regular;
-        } else {
-          regDisplay.innerText = '-';
-        }
+        regDisplay.innerText = state.regular > 0 ? state.regular : '-';
       }
 
       if (prioDisplay) {
-        if (state.priority > 0) {
-          prioDisplay.innerText = state.priority;
-        } else {
-          prioDisplay.innerText = '-';
-        }
+        prioDisplay.innerText = state.priority > 0 ? state.priority : '-';
       }
 
       // Update Screen Banner Text
