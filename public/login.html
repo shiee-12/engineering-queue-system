@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Admin Login | Municipality of Naic - Engineering Office</title>
+  <title>Admin Login</title>
   <link rel="stylesheet" href="style.css">
   <style>
     .login-wrapper {
@@ -113,21 +113,20 @@
       <form action="/api/login" method="POST">
         <div class="form-group">
           <label for="username">Username</label>
-          <input type="text" id="username" name="username" required autocomplete="username">
+          <input type="text" id="username" name="username" placeholder="Enter username" class="form-input" required>
         </div>
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" required autocomplete="current-password">
+          <input type="password" id="password" name="password" placeholder="Enter password" class="form-input" required>
+          <div class="forgot-wrapper">
+            <a href="/forgot-password.html" class="forgot-link">Forgot Password?</a>
+          </div>
         </div>
 
         <button type="submit" class="btn btn-navy login-btn">Sign In</button>
       </form>
     </div>
-
-    <div class="auth-footer">
-  <a href="/forgot-password.html" class="auth-link">Forgot Password?</a>
-</div>
   </main>
 
   <script>
