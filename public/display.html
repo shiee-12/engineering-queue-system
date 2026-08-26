@@ -68,141 +68,80 @@
   </main>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script>
-    // Force websocket transport for instant updates across devices
-    const socket = io({ transports: ['websocket'], upgrade: false });
+<script>
+  const socket = io({ transports: ['websocket'], upgrade: false });
 
-    // 1. Force Speech Synthesis to Initialize and Unmute Instantly on Load
-    function initSpeechEngine() {
-      if (!('speechSynthesis' in window)) return;
+  let audioUnlocked = false;
 
-      // Force-load browser voices
-      window.speechSynthesis.getVoices();
+  function initSpeechEngine() {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.resume();
+  }
 
-      // Resume speech synthesis engine immediately
+  window.addEventListener('DOMContentLoaded', initSpeechEngine);
+  window.addEventListener('load', initSpeechEngine);
+
+  function speakAnnouncement(text) {
+    if (!('speechSynthesis' in window)) return;
+
+    // Immediately stop ongoing voice audio to clear the channel
+    window.speechSynthesis.cancel();
+
+    setTimeout(() => {
       window.speechSynthesis.resume();
 
-      // Play an empty silent utterance to unlock audio context automatically
-      const silentUtterance = new SpeechSynthesisUtterance('');
-      silentUtterance.volume = 0;
-      window.speechSynthesis.speak(silentUtterance);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0; // Standard speech rate across mobile and desktop
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      window.speechSynthesis.speak(utterance);
+    }, 50);
+  }
+
+  let lastActionTimestamp = null;
+
+  socket.on('stateUpdate', (state) => {
+    const regDisplay = document.getElementById('reg-num-display');
+    const prioDisplay = document.getElementById('prio-num-display');
+    const banner = document.getElementById('announcement-banner');
+
+    // 1. Update Display Numbers Instantly
+    if (regDisplay) regDisplay.innerText = state.regular > 0 ? state.regular : '-';
+    if (prioDisplay) prioDisplay.innerText = state.priority > 0 ? state.priority : '-';
+
+    // 2. Update Footer Banner (Display Priority first in banner text)
+    let servingParts = [];
+    if (state.priority > 0) servingParts.push(`Priority Number ${state.priority}`);
+    if (state.regular > 0) servingParts.push(`Regular Number ${state.regular}`);
+
+    if (servingParts.length > 0) {
+      banner.innerText = `Now serving ${servingParts.join(' and ')}. Please proceed to the counter.`;
+    } else {
+      banner.innerText = "Waiting for the next number...";
     }
 
-    // Run speech initialization on page load and window events
-    window.addEventListener('DOMContentLoaded', initSpeechEngine);
-    window.addEventListener('load', initSpeechEngine);
+    // 3. Priority-First Voice Logic
+    if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
+      lastActionTimestamp = state.lastCalled.timestamp;
+      
+      const { type, number, action } = state.lastCalled;
+      let voiceText = "";
 
-    if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = initSpeechEngine;
-    }
+      // Format announcement message
+      if (action === 'recall') {
+        voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
+      } else if (action === 'next' || action === 'call') {
+        voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
+      }
 
-    // Unfreeze speech engine if tab was running in background or minimized
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && 'speechSynthesis' in window) {
+      if (voiceText) {
         window.speechSynthesis.resume();
-      }
-    });
-
-    // Cross-browser Fullscreen Toggle
-    function toggleFullscreen() {
-      const doc = document;
-      const docEl = doc.documentElement;
-
-      const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-      const exitFS = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
-
-      const isFullscreen = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
-
-      if (!isFullscreen) {
-        if (requestFS) {
-          requestFS.call(docEl).catch(err => {
-            console.warn(`Fullscreen request failed: ${err.message}`);
-          });
-        }
-      } else {
-        if (exitFS) {
-          exitFS.call(doc);
-        }
+        speakAnnouncement(voiceText);
       }
     }
-
-    function speakAnnouncement(text) {
-  if (!('speechSynthesis' in window)) return;
-
-  window.speechSynthesis.cancel();
-
-  setTimeout(() => {
-    window.speechSynthesis.resume();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Use 1.0 for standard natural speech speed across both mobile and desktop
-    utterance.rate = 1.0; 
-    utterance.pitch = 1.0;
-
-    // Optional: Select a specific voice if available on the device
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => v.lang.startsWith('en') && !v.name.includes('Network'));
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
-
-    window.speechSynthesis.speak(utterance);
-  }, 50);
-}
-
-    let lastActionTimestamp = null;
-
-    // Connect event: Prime audio context as soon as socket connects
-    socket.on('connect', () => {
-      initSpeechEngine();
-    });
-
-    socket.on('stateUpdate', (state) => {
-      const regDisplay = document.getElementById('reg-num-display');
-      const prioDisplay = document.getElementById('prio-num-display');
-      const banner = document.getElementById('announcement-banner');
-
-      // Update Screen Display Numbers Instantly
-      if (regDisplay) {
-        regDisplay.innerText = state.regular > 0 ? state.regular : '-';
-      }
-
-      if (prioDisplay) {
-        prioDisplay.innerText = state.priority > 0 ? state.priority : '-';
-      }
-
-      // Update Screen Banner Text
-      let servingParts = [];
-      if (state.regular > 0) servingParts.push(`Regular Number ${state.regular}`);
-      if (state.priority > 0) servingParts.push(`Priority Number ${state.priority}`);
-
-      if (servingParts.length > 0) {
-        banner.innerText = `Now serving ${servingParts.join(' and ')}. Please proceed to the counter.`;
-      } else {
-        banner.innerText = "Waiting for the next number...";
-      }
-
-      // Voice Logic
-      if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
-        lastActionTimestamp = state.lastCalled.timestamp;
-        const { type, number, action } = state.lastCalled;
-        
-        let voiceText = "";
-
-        if (action === 'recall') {
-          voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
-        } else if (action === 'next' || action === 'call') {
-          voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
-        }
-
-        if (voiceText) {
-          // Unmute context right before speaking
-          window.speechSynthesis.resume();
-          speakAnnouncement(voiceText);
-        }
-      }
-    });
-  </script>
+  });
+</script>
 </body>
 </html>
