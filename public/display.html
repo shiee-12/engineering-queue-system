@@ -126,25 +126,30 @@
       }
     }
 
-    // 2. Reliable Instant Interrupt Speech Function
     function speakAnnouncement(text) {
-      if (!('speechSynthesis' in window)) return;
+  if (!('speechSynthesis' in window)) return;
 
-      // Cancel current ongoing speech immediately
-      window.speechSynthesis.cancel();
+  window.speechSynthesis.cancel();
 
-      // Pause briefly (50ms) to allow browser audio pipeline to reset
-      setTimeout(() => {
-        window.speechSynthesis.resume();
+  setTimeout(() => {
+    window.speechSynthesis.resume();
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.1; // Clear announcement speed
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Use 1.0 for standard natural speech speed across both mobile and desktop
+    utterance.rate = 1.0; 
+    utterance.pitch = 1.0;
 
-        window.speechSynthesis.speak(utterance);
-      }, 50);
+    // Optional: Select a specific voice if available on the device
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.lang.startsWith('en') && !v.name.includes('Network'));
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
     }
+
+    window.speechSynthesis.speak(utterance);
+  }, 50);
+}
 
     let lastActionTimestamp = null;
 
