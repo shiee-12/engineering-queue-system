@@ -67,13 +67,11 @@
     </div>
   </main>
 
-<script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io({ transports: ['websocket'], upgrade: false });
 
-  // Priority-Aware Speech Queue
-  let announcementQueue = [];
-  let isSpeaking = false;
+  let audioUnlocked = false;
 
   function initSpeechEngine() {
     if (!('speechSynthesis' in window)) return;
@@ -84,52 +82,22 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
-  // Process the queue one message at a time
-  function processAnnouncementQueue() {
-    if (isSpeaking || announcementQueue.length === 0) return;
+  function speakAnnouncement(text) {
     if (!('speechSynthesis' in window)) return;
 
-    isSpeaking = true;
+    // Immediately stop ongoing voice audio to clear the channel
+    window.speechSynthesis.cancel();
 
-    // 1. Sort queue so PRIORITY items are ALWAYS spoken before REGULAR items
-    announcementQueue.sort((a, b) => {
-      if (a.type === 'Priority' && b.type !== 'Priority') return -1;
-      if (a.type !== 'Priority' && b.type === 'Priority') return 1;
-      return 0; // Keep original order for same types
-    });
+    setTimeout(() => {
+      window.speechSynthesis.resume();
 
-    // 2. Get the next highest-priority announcement
-    const currentItem = announcementQueue.shift();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0; // Standard speech rate across mobile and desktop
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
 
-    window.speechSynthesis.resume();
-
-    const utterance = new SpeechSynthesisUtterance(currentItem.text);
-    utterance.rate = 1.0; // Standard speed for mobile and desktop
-    utterance.pitch = 1.0;
-
-    // When current announcement finishes, process the next item in queue
-    utterance.onend = () => {
-      isSpeaking = false;
-      setTimeout(processAnnouncementQueue, 100);
-    };
-
-    // Error fallback to prevent queue freeze
-    utterance.onerror = () => {
-      isSpeaking = false;
-      setTimeout(processAnnouncementQueue, 100);
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }
-
-  // Add announcement to the queue
-  function queueAnnouncement(type, text) {
-    // Avoid duplicate announcements in queue
-    const isDuplicate = announcementQueue.some(item => item.text === text);
-    if (!isDuplicate) {
-      announcementQueue.push({ type, text });
-    }
-    processAnnouncementQueue();
+      window.speechSynthesis.speak(utterance);
+    }, 50);
   }
 
   let lastActionTimestamp = null;
@@ -143,7 +111,7 @@
     if (regDisplay) regDisplay.innerText = state.regular > 0 ? state.regular : '-';
     if (prioDisplay) prioDisplay.innerText = state.priority > 0 ? state.priority : '-';
 
-    // 2. Update Banner Text (Priority Listed First)
+    // 2. Update Footer Banner (Display Priority first in banner text)
     let servingParts = [];
     if (state.priority > 0) servingParts.push(`Priority Number ${state.priority}`);
     if (state.regular > 0) servingParts.push(`Regular Number ${state.regular}`);
@@ -154,13 +122,14 @@
       banner.innerText = "Waiting for the next number...";
     }
 
-    // 3. Queue Voice Announcement
+    // 3. Priority-First Voice Logic
     if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
       lastActionTimestamp = state.lastCalled.timestamp;
       
       const { type, number, action } = state.lastCalled;
       let voiceText = "";
 
+      // Format announcement message
       if (action === 'recall') {
         voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
       } else if (action === 'next' || action === 'call') {
@@ -168,7 +137,8 @@
       }
 
       if (voiceText) {
-        queueAnnouncement(type, voiceText);
+        window.speechSynthesis.resume();
+        speakAnnouncement(voiceText);
       }
     }
   });
