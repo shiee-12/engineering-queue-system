@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const fs = require('fs');
 const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
@@ -33,11 +34,29 @@ app.use((req, res, next) => {
   next();
 });
 
-// Admin Credentials
-const ADMIN_USERNAME = "naic_engineering";
-const ADMIN_PASSWORD_HASH = bcrypt.hashSync("EO2026!", 10);
+const CONFIG_PATH = path.join(__dirname, 'config.json');
 
-// Authentication Middleware
+// Helper to safely read credentials from config.json
+function getCredentials() {
+  if (fs.existsSync(CONFIG_PATH)) {
+    try {
+      const data = fs.readFileSync(CONFIG_PATH, 'utf8');
+      return JSON.parse(data);
+    } catch (err) {
+      console.error("Error reading config.json:", err);
+    }
+  }
+  return {
+    username: 'naic_engineering',
+    passwordHash: bcrypt.hashSync('EO2026!', 10)
+  };
+}
+
+// Helper to save updated credentials back to config.json
+function saveCredentials(creds) {
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(creds, null, 2), 'utf8');
+}
+
 function requireAuth(req, res, next) {
   if (req.session && req.session.user) {
     return next();
@@ -58,12 +77,18 @@ app.get('/login.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+// Forgot Password Page GET
+app.get('/forgot-password.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'forgot-password.html'));
+});
+
 // Login Form POST
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
+  const currentCreds = getCredentials();
 
-  const isUsernameValid = (username === ADMIN_USERNAME);
-  const isPasswordValid = isUsernameValid && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH);
+  const isUsernameValid = (username === currentCreds.username);
+  const isPasswordValid = isUsernameValid && bcrypt.compareSync(password, currentCreds.passwordHash);
 
   if (isUsernameValid && isPasswordValid) {
     req.session.user = username;
@@ -71,6 +96,27 @@ app.post('/api/login', (req, res) => {
   }
 
   res.redirect('/login.html?error=invalid');
+});
+
+// Reset Password Form POST
+app.post('/api/reset-password', (req, res) => {
+  const { username, newPassword } = req.body;
+  const currentCreds = getCredentials();
+
+  if (username !== currentCreds.username) {
+    return res.redirect('/forgot-password.html?error=invalid_user');
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.redirect('/forgot-password.html?error=weak_password');
+  }
+
+  // Hash the new password and write to config.json
+  const newHash = bcrypt.hashSync(newPassword, 10);
+  currentCreds.passwordHash = newHash;
+  saveCredentials(currentCreds);
+
+  res.redirect('/login.html?reset=success');
 });
 
 // Logout GET
