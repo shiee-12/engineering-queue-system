@@ -72,28 +72,31 @@
     // Force websocket transport for instant updates across devices
     const socket = io({ transports: ['websocket'], upgrade: false });
 
-    let audioUnlocked = false;
+    // 1. Force Speech Synthesis to Initialize and Unmute Instantly on Load
+    function initSpeechEngine() {
+      if (!('speechSynthesis' in window)) return;
 
-    // 1. Pre-load voices so speech engine is ready
-    function loadVoices() {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.getVoices();
-      }
+      // Force-load browser voices
+      window.speechSynthesis.getVoices();
+
+      // Resume speech synthesis engine immediately
+      window.speechSynthesis.resume();
+
+      // Play an empty silent utterance to unlock audio context automatically
+      const silentUtterance = new SpeechSynthesisUtterance('');
+      silentUtterance.volume = 0;
+      window.speechSynthesis.speak(silentUtterance);
     }
-    loadVoices();
+
+    // Run speech initialization on page load and window events
+    window.addEventListener('DOMContentLoaded', initSpeechEngine);
+    window.addEventListener('load', initSpeechEngine);
+
     if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
+      window.speechSynthesis.onvoiceschanged = initSpeechEngine;
     }
 
-    // 2. Unlock Browser Speech API on first user interaction anywhere on screen
-    document.addEventListener('click', () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.resume();
-        audioUnlocked = true;
-      }
-    }, { once: true });
-
-    // Unfreeze speech engine if tab was running in the background
+    // Unfreeze speech engine if tab was running in background or minimized
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && 'speechSynthesis' in window) {
         window.speechSynthesis.resume();
@@ -123,26 +126,32 @@
       }
     }
 
-    // 3. Reliable Instant Interrupt Speech Function
+    // 2. Reliable Instant Interrupt Speech Function
     function speakAnnouncement(text) {
       if (!('speechSynthesis' in window)) return;
 
-      // Cancel current speech
+      // Cancel current ongoing speech immediately
       window.speechSynthesis.cancel();
 
-      // Small delay allows browser speech engine to reset state properly
+      // Pause briefly (50ms) to allow browser audio pipeline to reset
       setTimeout(() => {
         window.speechSynthesis.resume();
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.1;
+        utterance.rate = 1.1; // Clear announcement speed
         utterance.pitch = 1.0;
+        utterance.volume = 1.0;
 
         window.speechSynthesis.speak(utterance);
       }, 50);
     }
 
     let lastActionTimestamp = null;
+
+    // Connect event: Prime audio context as soon as socket connects
+    socket.on('connect', () => {
+      initSpeechEngine();
+    });
 
     socket.on('stateUpdate', (state) => {
       const regDisplay = document.getElementById('reg-num-display');
@@ -183,6 +192,8 @@
         }
 
         if (voiceText) {
+          // Unmute context right before speaking
+          window.speechSynthesis.resume();
           speakAnnouncement(voiceText);
         }
       }
