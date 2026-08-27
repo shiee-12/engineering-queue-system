@@ -82,23 +82,49 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
-  function speakAnnouncement(text) {
-    if (!('speechSynthesis' in window)) return;
+  function announceNumber(queueType, number) {
+  if (!('speechSynthesis' in window)) return;
 
-    // Immediately stop ongoing voice audio to clear the channel
-    window.speechSynthesis.cancel();
+  // Cancel any ongoing speech before starting new call
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
 
-    setTimeout(() => {
-      window.speechSynthesis.resume();
+  let englishText = "";
+  let tagalogText = "";
+const typeTagalog = queueType.toLowerCase() === 'priority' ? 'Priority' : 'Regular';
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0; // Standard speech rate across mobile and desktop
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-
-      window.speechSynthesis.speak(utterance);
-    }, 50);
+  // Format message based on action
+  if (action === 'recall') {
+    englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
+    tagalogText = `Inuulit po, tinatawag ang ${typeTagalog} Number ${number}. Pumunta lamang po sa counter.`;
+  } else {
+    englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
+    tagalogText = `Tinatawag po ang ${typeTagalog} Number ${number}. Pumunta lamang po sa counter.`;
   }
+
+  // 1. English Speech Configuration
+  const utterEnglish = new SpeechSynthesisUtterance(englishText);
+  utterEnglish.lang = 'en-US';
+  utterEnglish.rate = 1.0;
+
+  // 2. Tagalog Speech Configuration
+  const utterTagalog = new SpeechSynthesisUtterance(tagalogText);
+  utterTagalog.lang = 'tl-PH';
+  utterTagalog.rate = 1.0;
+
+  // Look for native Tagalog/Filipino voice
+  const voices = window.speechSynthesis.getVoices();
+  const tagalogVoice = voices.find(v => v.lang.includes('tl') || v.lang.includes('fil'));
+  if (tagalogVoice) utterTagalog.voice = tagalogVoice;
+
+  // Chain Tagalog right after English finishes
+  utterEnglish.onend = () => {
+    window.speechSynthesis.speak(utterTagalog);
+  };
+
+  // Speak English first
+  window.speechSynthesis.speak(utterEnglish);
+}
 
   let lastActionTimestamp = null;
 
@@ -132,6 +158,7 @@
       // Format announcement message
       if (action === 'recall') {
         voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
+
       } else if (action === 'next' || action === 'call') {
         voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
       }
