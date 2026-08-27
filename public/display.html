@@ -82,15 +82,16 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
-  function announceNumber(queueType, number) {
+  function announceNumber(queueType, number, action) {
   if (!('speechSynthesis' in window)) return;
 
   // Cancel any ongoing speech before starting new call
   window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
 
   let englishText = "";
   let tagalogText = "";
-const typeTagalog = queueType.toLowerCase() === 'priority' ? 'Priority' : 'Regular';
+  const typeTagalog = queueType.toLowerCase() === 'priority' ? 'Priority' : 'Regular';
 
   // Format message based on action
   if (action === 'recall') {
@@ -152,20 +153,10 @@ const typeTagalog = queueType.toLowerCase() === 'priority' ? 'Priority' : 'Regul
       lastActionTimestamp = state.lastCalled.timestamp;
       
       const { type, number, action } = state.lastCalled;
-      let voiceText = "";
 
-      // Format announcement message
-      if (action === 'recall') {
-        voiceText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
-
-      } else if (action === 'next' || action === 'call') {
-        voiceText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
-      }
-
-      if (voiceText) {
         window.speechSynthesis.resume();
-        speakAnnouncement(voiceText);
-      }
+        announceNumber(type, number, action);
+      
     }
   });
 </script>
