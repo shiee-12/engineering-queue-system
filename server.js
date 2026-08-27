@@ -78,23 +78,27 @@ app.post('/api/login', (req, res) => {
 // Reset Password Form POST
 app.post('/api/reset-password', (req, res) => {
   try {
-    const { username, newPassword } = req.body;
+    const rawUsername = req.body.username ? String(req.body.username).trim() : '';
+    const newPassword = req.body.newPassword ? String (req.body.newPassword).trim() : '';
 
-  if (username !== username !== DEFAULT_USERNAME) {
-    return res.redirect('/forgot-password.html?error=invalid_user');
+    const targetUsername = DEFAULT_USERNAME.toLocaleLowerCase();
+    const inputUsername = rawUsername.toLowerCase();
+
+    if (inputUsername !== targetUsername && inputUsername !== '') {
+      return res.redirect('/forgot-password.html?error=invalid_user');
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.redirect('/forgot-password.html?error=weak_password');
+    }
+
+    activePasswordHash = bcrypt.hashSync(newPassword, 10);
+
+    return res.redirect('/login.html?reset=success');
+  } catch (err) {
+    console.error('Reset Password Error:', err);
+    return res.redirect('/forgot-password.html?error=server_error');
   }
-
-  if (!newPassword || newPassword.length < 6) {
-    return res.redirect('/forgot-password.html?error=weak_password');
-  }
-
-  activePasswordHash = bcrypt.hashSync(newPassword, 10);
-
-  return res.redirect('/login.html?reset=success');
-} catch {
-  console.error('Reset Password Error:', err);
-  return res.redirect('/forgot-password.html?error=server_error');
-}
 });
 
 app.use((err, req, res, next) => {
