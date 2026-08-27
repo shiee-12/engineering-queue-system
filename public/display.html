@@ -83,48 +83,30 @@
   window.addEventListener('load', initSpeechEngine);
 
   function announceNumber(queueType, number, action) {
-  if (!('speechSynthesis' in window)) return;
+    if (!('speechSynthesis' in window)) return;
 
-  // Cancel any ongoing speech before starting new call
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.resume();
+    // Cancel any ongoing speech before starting new call
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
 
-  let englishText = "";
-  let tagalogText = "";
-  const typeTagalog = queueType.toLowerCase() === 'priority' ? 'Priority' : 'Regular';
+    let englishText = "";
 
-  // Format message based on action
-  if (action === 'recall') {
-    englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
-    tagalogText = `Inuulit po, tinatawag ang ${typeTagalog} Number ${number}. Pumunta lamang po sa counter.`;
-  } else {
-    englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
-    tagalogText = `Tinatawag po ang ${typeTagalog} Number ${number}. Pumunta lamang po sa counter.`;
+    // Format message based on action
+    if (action === 'recall') {
+      englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
+    } else {
+      englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
+    }
+
+    // Configure English Speech
+    const utterEnglish = new SpeechSynthesisUtterance(englishText);
+    utterEnglish.lang = 'en-US';
+    utterEnglish.rate = 1.0;
+
+    // Speak English announcement
+    window.speechSynthesis.speak(utterEnglish);
   }
-
-  // 1. English Speech Configuration
-  const utterEnglish = new SpeechSynthesisUtterance(englishText);
-  utterEnglish.lang = 'en-US';
-  utterEnglish.rate = 1.0;
-
-  // 2. Tagalog Speech Configuration
-  const utterTagalog = new SpeechSynthesisUtterance(tagalogText);
-  utterTagalog.lang = 'tl-PH';
-  utterTagalog.rate = 1.0;
-
-  // Look for native Tagalog/Filipino voice
-  const voices = window.speechSynthesis.getVoices();
-  const tagalogVoice = voices.find(v => v.lang.includes('tl') || v.lang.includes('fil'));
-  if (tagalogVoice) utterTagalog.voice = tagalogVoice;
-
-  // Chain Tagalog right after English finishes
-  utterEnglish.onend = () => {
-    window.speechSynthesis.speak(utterTagalog);
-  };
-
-  // Speak English first
-  window.speechSynthesis.speak(utterEnglish);
-}
+ 
 
   let lastActionTimestamp = null;
 
