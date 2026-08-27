@@ -136,6 +136,17 @@
       sessionStorage.setItem('active_session', 'true');
     });
   }
+  // Display reset success banner on login page
+if (urlParams.get('reset') === 'success') {
+  const errorBanner = document.getElementById('error-banner');
+  if (errorBanner) {
+    errorBanner.style.display = 'block';
+    errorBanner.style.backgroundColor = '#def7ec';
+    errorBanner.style.color = '#03543f';
+    errorBanner.style.borderColor = '#84e1bc';
+    errorBanner.innerText = 'Password updated successfully! Log in with your new password.';
+  }
+}
 </script>
 </body>
 </html>
