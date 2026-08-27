@@ -77,9 +77,10 @@ app.post('/api/login', (req, res) => {
 
 // Reset Password Form POST
 app.post('/api/reset-password', (req, res) => {
-  const { username, newPassword } = req.body;
+  try {
+    const { username, newPassword } = req.body;
 
-  if (username !== currentCreds.username) {
+  if (username !== username !== DEFAULT_USERNAME) {
     return res.redirect('/forgot-password.html?error=invalid_user');
   }
 
@@ -87,9 +88,18 @@ app.post('/api/reset-password', (req, res) => {
     return res.redirect('/forgot-password.html?error=weak_password');
   }
 
-  currentCreds.passwordHash = bcrypt.hashSync(newPassword, 10);
-  
-  res.redirect('/login.html?reset=success');
+  activePasswordHash = bcrypt.hashSync(newPassword, 10);
+
+  return res.redirect('/login.html?reset=success');
+} catch {
+  console.error('Reset Password Error:', err);
+  return res.redirect('/forgot-password.html?error=server_error');
+}
+});
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err.stack);
+  res.status(500).send('An unexpected error occurred. Please try again or return to login.');
 });
 
 // Logout GET
