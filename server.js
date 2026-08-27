@@ -33,14 +33,8 @@ app.use((req, res, next) => {
   next();
 });
 
-let currentCreds = {
-  username: 'naic_engineering',
-  passwordHash: '$2b$10$wN9QZqK4Y0U2/01nE8J1u.Y7eP6D4B92I8V1G5K0L9M2N1O0P1Q2'
-};
-
-if (!currentCreds.passwordHash || currentCreds.passwordHash.length < 20) {
-  currentCreds.passwordHash = bcrypt.hashSync('EO2026!', 10);
-}
+const DEFAULT_USERNAME = 'naic_engineering';
+let activePasswordHash = bcrypt.hashSync('EO2026!', 10);
 
 function requireAuth(req, res, next) {
   if (req.session && req.session.user) {
@@ -69,10 +63,9 @@ app.get('/forgot-password.html', (req, res) => {
 // Login Form POST
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  const currentCreds = getCredentials();
 
-  const isUsernameValid = (username === currentCreds.username);
-  const isPasswordValid = isUsernameValid && bcrypt.compareSync(password, currentCreds.passwordHash);
+  const isUsernameValid = (username === DEFAULT_USERNAME);
+  const isPasswordValid = isUsernameValid && bcrypt.compareSync(password, activePasswordHash);
 
   if (isUsernameValid && isPasswordValid) {
     req.session.user = username;
