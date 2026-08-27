@@ -85,6 +85,18 @@
       padding: 12px;
       margin-top: 10px;
     }
+
+    .success-banner {
+      background-color: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
@@ -110,6 +122,10 @@
         Invalid username or password. Please try again.
       </div>
 
+      <div id="success-banner" class="success-banner" style="display: none;">
+        Password updated successfully! Please log in with your new password.
+      </div>
+
       <form action="/api/login" method="POST">
         <div class="form-group">
           <label for="username">Username</label>
@@ -130,6 +146,22 @@
   </main>
 
   <script>
+    const urlParams = new URLSearchParams(window.location.search);
+
+  // Check for error status
+  if (urlParams.get('error') === 'invalid') {
+    const errorBanner = document.getElementById('error-banner');
+    if (errorBanner) errorBanner.style.display = 'block';
+  }
+
+  // Check for password reset success
+  if (urlParams.get('reset') === 'success') {
+    const successBanner = document.getElementById('success-banner');
+    if (successBanner) {
+      successBanner.style.display = 'block';
+    }
+  }
+
   const loginForm = document.querySelector('form');
   if (loginForm) {
     loginForm.addEventListener('submit', () => {
