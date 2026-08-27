@@ -87,7 +87,9 @@
 
   // Cancel any ongoing speech before starting new call
   window.speechSynthesis.cancel();
+  if (window.speechSynthesis.pause) {
   window.speechSynthesis.resume();
+  }
 
   let englishText = "";
   let tagalogText = "";
@@ -124,6 +126,11 @@ const typeTagalog = queueType.toLowerCase() === 'priority' ? 'Priority' : 'Regul
 
   // Speak English first
   window.speechSynthesis.speak(utterEnglish);
+  }
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.getVoices();
+    }
 }
 
   let lastActionTimestamp = null;
