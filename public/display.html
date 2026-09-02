@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+  <meta name="robots" content="noindex, nofollow">
+
  <script>
   function navigateTo(targetPage) {
     window.location.href = targetPage;
@@ -21,7 +22,6 @@
   <!-- Prefetch opposite page for instant switching -->
   <link rel="prefetch" href="controller.html" as="document">
   <link rel="prefetch" href="display.html" as="document">
-  <link rel="prefetch" href="login.html" as="document">
 
   <!-- Pre-connect to Socket.io resources -->
   <link rel="preconnect" href="https://cdn.socket.io">
