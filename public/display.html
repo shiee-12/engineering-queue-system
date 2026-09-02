@@ -6,6 +6,10 @@
   <meta name="robots" content="noindex, nofollow">
 
  <script>
+  if (!sessionStorage.getItem('active_session')) {
+      window.location.replace('/login.html');
+    }
+
   function navigateTo(targetPage) {
     window.location.href = targetPage;
   }
