@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="index, follow">
 
-  <title>Admin Login</title>
+  <title>Engineering Queuing System | Municipality of Naic</title>
   <meta name="description" content="Queuing Management System for the Engineering Office, Municipality of Naic, Cavite. View live serving numbers for Regular and Priority lines.">
-  <link rel="canonical" href="https://engineering-queue-system.vercel.app/login.html">
+  <meta name="keywords" content="Naic Queuing System, Naic Engineering Queue System">
+  
+  <link rel="canonical" href="https://engineering-queue-system.vercel.app/">
   <link rel="stylesheet" href="style.css">
   
   <style>
@@ -105,7 +107,7 @@
 </head>
 <body>
 
-  <!-- Header Navbar -->
+  <!-- Header -->
   <header>
     <div class="logo-container">
       <img src="assets/logo.png" class="office-logo" alt="Logo">
@@ -116,7 +118,7 @@
     </div>
   </header>
 
-  <!-- Login Form Container -->
+  <!-- lOGIN -->
   <main class="login-wrapper">
     <div class="login-card">
       <h1 class="login-title">Admin Login</h1>
@@ -148,37 +150,35 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
 
-  // Check for error status
-  if (urlParams.get('error') === 'invalid') {
-    const errorBanner = document.getElementById('error-banner');
-    if (errorBanner) errorBanner.style.display = 'block';
-  }
-
-  // Check for password reset success
-  if (urlParams.get('reset') === 'success') {
-    const successBanner = document.getElementById('success-banner');
-    if (successBanner) {
-      successBanner.style.display = 'block';
+    if (urlParams.get('error') === 'invalid') {
+      const errorBanner = document.getElementById('error-banner');
+      if (errorBanner) errorBanner.style.display = 'block';
     }
-  }
 
-  const loginForm = document.querySelector('form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', () => {
-      sessionStorage.setItem('active_session', 'true');
-    });
-  }
-  // Display reset success banner on login page
-if (urlParams.get('reset') === 'success') {
-  const errorBanner = document.getElementById('error-banner');
-  if (errorBanner) {
-    errorBanner.style.display = 'block';
-    errorBanner.style.backgroundColor = '#def7ec';
-    errorBanner.style.color = '#03543f';
-    errorBanner.style.borderColor = '#84e1bc';
-    errorBanner.innerText = 'Password updated successfully! Log in with your new password.';
-  }
-}
+    if (urlParams.get('reset') === 'success') {
+      const successBanner = document.getElementById('success-banner');
+      if (successBanner) {
+        successBanner.style.display = 'block';
+      }
+    }
+
+    const loginForm = document.querySelector('form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', () => {
+        sessionStorage.setItem('active_session', 'true');
+      });
+    }
+
+    if (urlParams.get('reset') === 'success') {
+      const errorBanner = document.getElementById('error-banner');
+      if (errorBanner) {
+        errorBanner.style.display = 'block';
+        errorBanner.style.backgroundColor = '#def7ec';
+        errorBanner.style.color = '#03543f';
+        errorBanner.style.borderColor = '#84e1bc';
+        errorBanner.innerText = 'Password updated successfully! Log in with your new password.';
+      }
+    }
 </script>
 </body>
 </html>

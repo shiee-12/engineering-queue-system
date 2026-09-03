@@ -15,19 +15,15 @@
   }
 </script>
 
-  <!-- Title Google shows in search results -->
   <title>Engineering Queuing System | Municipality of Naic</title>
   
-  <!-- Description Google displays under the title -->
   <meta name="description" content="Queuing Management System for the Engineering Office, Municipality of Naic, Cavite. View live serving numbers for Regular and Priority lines.">
   <meta name="keywords" content="Engineering Queuing System">
   <link rel="stylesheet" href="style.css">
 
-  <!-- Prefetch opposite page for instant switching -->
   <link rel="prefetch" href="controller.html" as="document">
   <link rel="prefetch" href="display.html" as="document">
 
-  <!-- Pre-connect to Socket.io resources -->
   <link rel="preconnect" href="https://cdn.socket.io">
 </head>
 <body>
@@ -50,7 +46,6 @@
     <h1 class="display-header-text">Now Serving</h1>
 
     <div class="grid-container">
-      <!-- Regular Line Panel -->
       <div class="panel display-panel">
         <div class="panel-header regular">REGULAR LINE</div>
         <div class="display-panel-body">
@@ -58,7 +53,6 @@
         </div>
       </div>
 
-      <!-- Priority Line Panel -->
       <div class="panel display-panel">
         <div class="panel-header priority">PRIORITY LINE</div>
         <div class="display-panel-body">
@@ -91,7 +85,7 @@
       }
     }
   }
-  
+
   let audioUnlocked = false;
 
   function initSpeechEngine() {
@@ -119,16 +113,13 @@
       englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
     }
 
-    // Configure English Speech
     const utterEnglish = new SpeechSynthesisUtterance(englishText);
     utterEnglish.lang = 'en-US';
     utterEnglish.rate = 1.0;
 
-    // Speak English announcement
     window.speechSynthesis.speak(utterEnglish);
   }
  
-
   let lastActionTimestamp = null;
 
   socket.on('stateUpdate', (state) => {
@@ -136,11 +127,9 @@
     const prioDisplay = document.getElementById('prio-num-display');
     const banner = document.getElementById('announcement-banner');
 
-    // 1. Update Display Numbers Instantly
     if (regDisplay) regDisplay.innerText = state.regular > 0 ? state.regular : '-';
     if (prioDisplay) prioDisplay.innerText = state.priority > 0 ? state.priority : '-';
 
-    // 2. Update Footer Banner (Display Priority first in banner text)
     let servingParts = [];
     if (state.priority > 0) servingParts.push(`Priority Number ${state.priority}`);
     if (state.regular > 0) servingParts.push(`Regular Number ${state.regular}`);
@@ -151,7 +140,6 @@
       banner.innerText = "Waiting for the next number...";
     }
 
-    // 3. Priority-First Voice Logic
     if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
       lastActionTimestamp = state.lastCalled.timestamp;
       
