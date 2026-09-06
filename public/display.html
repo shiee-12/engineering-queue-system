@@ -68,8 +68,8 @@
 
   <script src="/socket.io/socket.io.js"></script>
 
-  <script>
-    const socket = io({ transports: ['websocket'], upgrade: false });
+<script>
+  const socket = io({ transports: ['websocket'], upgrade: false });
 
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
@@ -78,7 +78,7 @@
       } else if (document.documentElement.webkitRequestFullscreen) {
         document.documentElement.webkitRequestFullscreen();
       }
-      } else {
+    } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) {
@@ -86,8 +86,6 @@
       }
     }
   }
-
-  let audioUnlocked = false;
 
   function initSpeechEngine() {
     if (!('speechSynthesis' in window)) return;
@@ -98,29 +96,63 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
+  // Speech Queue Management
+  let speechQueue = [];
+  let isSpeaking = false;
+  let lastCallTime = 0;
+
+  function processSpeechQueue() {
+    if (speechQueue.length === 0) {
+      isSpeaking = false;
+      return;
+    }
+
+    isSpeaking = true;
+    const textToSpeak = speechQueue.shift();
+
+    window.speechSynthesis.resume();
+    const utterEnglish = new SpeechSynthesisUtterance(textToSpeak);
+    utterEnglish.lang = 'en-US';
+    utterEnglish.rate = 1.0;
+
+    utterEnglish.onend = () => {
+      processSpeechQueue();
+    };
+
+    utterEnglish.onerror = () => {
+      processSpeechQueue();
+    };
+
+    window.speechSynthesis.speak(utterEnglish);
+  }
+
   function announceNumber(queueType, number, action) {
     if (!('speechSynthesis' in window)) return;
 
-    // Cancel any ongoing speech before starting new call
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume();
-
     let englishText = "";
-
-    // Format message based on action
     if (action === 'recall') {
       englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
     } else {
       englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
     }
 
-    const utterEnglish = new SpeechSynthesisUtterance(englishText);
-    utterEnglish.lang = 'en-US';
-    utterEnglish.rate = 1.0;
+    const now = Date.now();
+    // If clicks arrive within 1.5 seconds (simultaneous clicks), queue them to play back-to-back.
+    // If clicked after 1.5 seconds, interrupt current speech instantly.
+    if (now - lastCallTime > 1500) {
+      window.speechSynthesis.cancel();
+      speechQueue = [];
+      isSpeaking = false;
+    }
+    lastCallTime = now;
 
-    window.speechSynthesis.speak(utterEnglish);
+    speechQueue.push(englishText);
+
+    if (!isSpeaking) {
+      processSpeechQueue();
+    }
   }
- 
+
   let lastActionTimestamp = null;
 
   socket.on('stateUpdate', (state) => {
@@ -146,9 +178,8 @@
       
       const { type, number, action } = state.lastCalled;
 
-        window.speechSynthesis.resume();
-        announceNumber(type, number, action);
-      
+      window.speechSynthesis.resume();
+      announceNumber(type, number, action);
     }
   });
 </script>
