@@ -100,7 +100,7 @@
   let pendingCalls = [];
 
   function speakCombinedAnnouncement() {
-    if (pendingCalls.length === 0) return;
+    if (pendingCalls.length === 0 || !('speechSynthesis' in window)) return;
 
     let textToSpeak = "";
 
@@ -126,6 +126,10 @@
     utterEnglish.lang = 'en-US';
     utterEnglish.rate = 1.0;
 
+    utterEnglish.onerror = (e) => {
+      console.error('Speech synthesis error:', e);
+      window.speechSynthesis.resume();
+    };
     window.speechSynthesis.speak(utterEnglish);
   }
 
@@ -139,7 +143,7 @@
     // Buffer window to combine near-simultaneous triggers (250ms)
     speechTimer = setTimeout(() => {
       speakCombinedAnnouncement();
-    }, 250);
+    }, 200);
   }
 
   let lastActionTimestamp = null;
