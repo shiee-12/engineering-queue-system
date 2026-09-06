@@ -47,6 +47,13 @@ function requireAuth(req, res, next) {
 // Allow serving CSS, JS, and Images freely without blocking login
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
+app.get('/', (req, res) => {
+  if (req.session && req.session.user) {
+    return res.redirect('/controller.html');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
 // Login Page GET
 app.get('/login.html', (req, res) => {
   if (req.session && req.session.user) {
