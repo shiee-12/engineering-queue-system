@@ -96,38 +96,31 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
-  // Combined Announcement Logic
-  let pendingCalls = [];
   let speechTimer = null;
+  let latestState = null;
 
-  function speakPendingCalls() {
-    if (pendingCalls.length === 0 || !('speechSynthesis' in window)) return;
+  function speakAnnouncement() {
+    if (!latestState || !('speechSynthesis' in window)) return;
 
     let englishText = "";
 
-    if (pendingCalls.length > 1) {
-      // Both lines triggered together: format as "Now serving Regular Number X and Priority Number Y..."
-      const parts = pendingCalls.map(item => {
-        if (item.action === 'recall') {
-          return `again, calling for ${item.queueType} Number ${item.number}`;
-        }
-        return `${item.queueType} Number ${item.number}`;
-      });
-      englishText = `Now serving ${parts.join(' and ')}. Please proceed to the counter.`;
-    } else {
-      // Single line triggered
-      const { queueType, number, action } = pendingCalls[0];
+    // Check if BOTH queue types currently have active serving numbers
+    if (latestState.regular > 0 && latestState.priority > 0) {
+      // Both lines set: voice out both numbers together
+      englishText = `Now serving Priority Number ${latestState.priority} and Regular Number ${latestState.regular}. Please proceed to the counter.`;
+    } else if (latestState.lastCalled) {
+      // Single line active: voice out the specific last called item
+      const { type, number, action } = latestState.lastCalled;
       if (action === 'recall') {
-        englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
+        englishText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
       } else {
-        englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
+        englishText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
       }
     }
 
-    // Reset buffer
-    pendingCalls = [];
+    if (!englishText) return;
 
-    // Interrupt previous speech instantly for rapid clicks
+    // Interrupt previous speech instantly on rapid clicks
     window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
 
@@ -138,21 +131,19 @@
     window.speechSynthesis.speak(utterEnglish);
   }
 
-  function announceNumber(queueType, number, action) {
+  function announceNumber(state) {
     if (!('speechSynthesis' in window)) return;
 
-    // Push call into buffer
-    pendingCalls.push({ queueType, number, action });
+    latestState = state;
 
-    // Clear existing timer so consecutive/simultaneous presses get grouped
     clearTimeout(speechTimer);
 
-    // 150ms buffer to catch simultaneous clicks before speaking
+    // 200ms buffer window to capture near-simultaneous socket updates
     speechTimer = setTimeout(() => {
-      speakPendingCalls();
-    }, 150);
+      speakAnnouncement();
+    }, 200);
   }
- 
+
   let lastActionTimestamp = null;
 
   socket.on('stateUpdate', (state) => {
@@ -175,12 +166,9 @@
 
     if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
       lastActionTimestamp = state.lastCalled.timestamp;
-      
-      const { type, number, action } = state.lastCalled;
 
-        window.speechSynthesis.resume();
-        announceNumber(type, number, action);
-      
+      window.speechSynthesis.resume();
+      announceNumber(state);
     }
   });
 </script>
