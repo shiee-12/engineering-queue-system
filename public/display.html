@@ -36,7 +36,6 @@
       </div>
     </div>
     <div class="nav-buttons">
-      <button type="button" class="nav-btn outline" onclick="navigateTo('controller.html')">Controller</button>
       <button type="button" class="nav-btn outline" onclick="navigateTo('display.html')">Display</button>
       <button type="button" class="nav-btn outline" onclick="toggleFullscreen()">Fullscreen</button>
     </div>
@@ -156,7 +155,7 @@
       clearTimeout(speechTimer);
       speechTimer = setTimeout(() => {
         speakAnnouncement(state);
-      }, 800);
+      }, 300);
     }
   }
 
