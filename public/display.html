@@ -104,15 +104,15 @@
 
     let englishText = "";
 
-    // Check if distinct line types (Regular AND Priority) were received in this batch
+    // Check if both Regular AND Priority were triggered consecutively/simultaneously
     const hasRegular = pendingCalls.some(item => item.type.toLowerCase() === 'regular');
     const hasPriority = pendingCalls.some(item => item.type.toLowerCase() === 'priority');
 
-    // Voice out BOTH ONLY if both Regular and Priority were triggered simultaneously in this buffer window
     if (hasRegular && hasPriority && state.regular > 0 && state.priority > 0) {
+      // Both lines triggered consecutively: voice out both active numbers
       englishText = `Now serving Priority Number ${state.priority} and Regular Number ${state.regular}. Please proceed to the counter.`;
     } else {
-      // Otherwise, voice out ONLY the single line that was just called/recalled
+      // Single line triggered or rapid clicks on the same line
       const latestCall = pendingCalls[pendingCalls.length - 1];
       const { type, number, action } = latestCall;
 
@@ -123,10 +123,10 @@
       }
     }
 
-    // Reset the batch buffer
+    // Reset buffer after speaking
     pendingCalls = [];
 
-    // Cut off any prior speech immediately for rapid clicking
+    // Interrupt previous audio for rapid clicks
     window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
 
@@ -140,15 +140,24 @@
   function announceNumber(lastCalled, state) {
     if (!('speechSynthesis' in window)) return;
 
-    // Push incoming action into buffer
+    // Check if the incoming call is of a DIFFERENT queue type than what is currently buffered
+    const isDifferentType = pendingCalls.length > 0 && 
+      pendingCalls[pendingCalls.length - 1].type.toLowerCase() !== lastCalled.type.toLowerCase();
+
+    // Add incoming call to buffer
     pendingCalls.push(lastCalled);
 
-    clearTimeout(speechTimer);
-
-    // 200ms buffer to capture simultaneous button clicks
-    speechTimer = setTimeout(() => {
+    if (isDifferentType) {
+      // If Regular and Priority were clicked consecutively, speak immediately as a combined call
+      clearTimeout(speechTimer);
       speakAnnouncement(state);
-    }, 200);
+    } else {
+      // If clicking the same button or starting a new call sequence, wait 1000ms for a potential second button click
+      clearTimeout(speechTimer);
+      speechTimer = setTimeout(() => {
+        speakAnnouncement(state);
+      }, 1000);
+    }
   }
 
   let lastActionTimestamp = null;
