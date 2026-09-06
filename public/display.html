@@ -68,8 +68,8 @@
 
   <script src="/socket.io/socket.io.js"></script>
 
-  <script>
-    const socket = io({ transports: ['websocket'], upgrade: false });
+<script>
+  const socket = io({ transports: ['websocket'], upgrade: false });
 
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
@@ -78,7 +78,7 @@
       } else if (document.documentElement.webkitRequestFullscreen) {
         document.documentElement.webkitRequestFullscreen();
       }
-      } else {
+    } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) {
@@ -97,20 +97,25 @@
   window.addEventListener('load', initSpeechEngine);
 
   let speechTimer = null;
-  let latestState = null;
+  let pendingCalls = [];
 
-  function speakAnnouncement() {
-    if (!latestState || !('speechSynthesis' in window)) return;
+  function speakAnnouncement(state) {
+    if (pendingCalls.length === 0 || !('speechSynthesis' in window)) return;
 
     let englishText = "";
 
-    // Check if BOTH queue types currently have active serving numbers
-    if (latestState.regular > 0 && latestState.priority > 0) {
-      // Both lines set: voice out both numbers together
-      englishText = `Now serving Priority Number ${latestState.priority} and Regular Number ${latestState.regular}. Please proceed to the counter.`;
-    } else if (latestState.lastCalled) {
-      // Single line active: voice out the specific last called item
-      const { type, number, action } = latestState.lastCalled;
+    // Check if distinct line types (Regular AND Priority) were received in this batch
+    const hasRegular = pendingCalls.some(item => item.type.toLowerCase() === 'regular');
+    const hasPriority = pendingCalls.some(item => item.type.toLowerCase() === 'priority');
+
+    // Voice out BOTH ONLY if both Regular and Priority were triggered simultaneously in this buffer window
+    if (hasRegular && hasPriority && state.regular > 0 && state.priority > 0) {
+      englishText = `Now serving Priority Number ${state.priority} and Regular Number ${state.regular}. Please proceed to the counter.`;
+    } else {
+      // Otherwise, voice out ONLY the single line that was just called/recalled
+      const latestCall = pendingCalls[pendingCalls.length - 1];
+      const { type, number, action } = latestCall;
+
       if (action === 'recall') {
         englishText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
       } else {
@@ -118,9 +123,10 @@
       }
     }
 
-    if (!englishText) return;
+    // Reset the batch buffer
+    pendingCalls = [];
 
-    // Interrupt previous speech instantly on rapid clicks
+    // Cut off any prior speech immediately for rapid clicking
     window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
 
@@ -131,16 +137,17 @@
     window.speechSynthesis.speak(utterEnglish);
   }
 
-  function announceNumber(state) {
+  function announceNumber(lastCalled, state) {
     if (!('speechSynthesis' in window)) return;
 
-    latestState = state;
+    // Push incoming action into buffer
+    pendingCalls.push(lastCalled);
 
     clearTimeout(speechTimer);
 
-    // 200ms buffer window to capture near-simultaneous socket updates
+    // 200ms buffer to capture simultaneous button clicks
     speechTimer = setTimeout(() => {
-      speakAnnouncement();
+      speakAnnouncement(state);
     }, 200);
   }
 
@@ -168,7 +175,7 @@
       lastActionTimestamp = state.lastCalled.timestamp;
 
       window.speechSynthesis.resume();
-      announceNumber(state);
+      announceNumber(state.lastCalled, state);
     }
   });
 </script>
