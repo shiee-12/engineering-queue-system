@@ -96,37 +96,40 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
+  // Combined Announcement Logic
+  let pendingCalls = [];
   let speechTimer = null;
-  let pendingEvents = [];
 
-  function speakAnnouncement(state) {
-    if (!('speechSynthesis' in window)) return;
-
-    // Immediately cut off previous speech for rapid individual clicks
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume();
+  function speakPendingCalls() {
+    if (pendingCalls.length === 0 || !('speechSynthesis' in window)) return;
 
     let englishText = "";
 
-    // Check if both lines currently have active serving numbers
-    if (state.regular > 0 && state.priority > 0) {
-      // Both are set: voice out both exactly as shown in the banner
-      englishText = `Now serving Regular Number ${state.regular} and Priority Number ${state.priority}. Please proceed to the counter.`;
+    if (pendingCalls.length > 1) {
+      // Both lines triggered together: format as "Now serving Regular Number X and Priority Number Y..."
+      const parts = pendingCalls.map(item => {
+        if (item.action === 'recall') {
+          return `again, calling for ${item.queueType} Number ${item.number}`;
+        }
+        return `${item.queueType} Number ${item.number}`;
+      });
+      englishText = `Now serving ${parts.join(' and ')}. Please proceed to the counter.`;
     } else {
-      // Only one line is set: take the most recently called action
-      const latestCall = pendingEvents[pendingEvents.length - 1];
-      if (!latestCall) return;
-
-      const { type, number, action } = latestCall;
+      // Single line triggered
+      const { queueType, number, action } = pendingCalls[0];
       if (action === 'recall') {
-        englishText = `Again, calling for ${type} Number ${number}. Please proceed to the counter.`;
+        englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
       } else {
-        englishText = `Now serving ${type} Number ${number}. Please proceed to the counter.`;
+        englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
       }
     }
 
     // Reset buffer
-    pendingEvents = [];
+    pendingCalls = [];
+
+    // Interrupt previous speech instantly for rapid clicks
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
 
     const utterEnglish = new SpeechSynthesisUtterance(englishText);
     utterEnglish.lang = 'en-US';
@@ -135,17 +138,19 @@
     window.speechSynthesis.speak(utterEnglish);
   }
 
-  function announceNumber(type, number, action, state) {
+  function announceNumber(queueType, number, action) {
     if (!('speechSynthesis' in window)) return;
 
-    pendingEvents.push({ type, number, action });
+    // Push call into buffer
+    pendingCalls.push({ queueType, number, action });
 
+    // Clear existing timer so consecutive/simultaneous presses get grouped
     clearTimeout(speechTimer);
 
-    // 200ms buffer to catch simultaneous or rapid consecutive clicks
+    // 150ms buffer to catch simultaneous clicks before speaking
     speechTimer = setTimeout(() => {
-      speakAnnouncement(state);
-    }, 200);
+      speakPendingCalls();
+    }, 150);
   }
  
   let lastActionTimestamp = null;
