@@ -132,7 +132,7 @@
 
     const utterEnglish = new SpeechSynthesisUtterance(englishText);
     utterEnglish.lang = 'en-US';
-    utterEnglish.rate = 1.0;
+    utterEnglish.rate = 1.1;
 
     window.speechSynthesis.speak(utterEnglish);
   }
@@ -156,7 +156,7 @@
       clearTimeout(speechTimer);
       speechTimer = setTimeout(() => {
         speakAnnouncement(state);
-      }, 1000);
+      }, 800);
     }
   }
 
