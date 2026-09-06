@@ -78,7 +78,7 @@
       } else if (document.documentElement.webkitRequestFullscreen) {
         document.documentElement.webkitRequestFullscreen();
       }
-    } else {
+      } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) {
@@ -86,6 +86,8 @@
       }
     }
   }
+
+  let audioUnlocked = false;
 
   function initSpeechEngine() {
     if (!('speechSynthesis' in window)) return;
@@ -96,61 +98,27 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
-  // Speech Queue Management
-  let speechQueue = [];
-  let isSpeaking = false;
-  let lastCallTime = 0;
-
-  function processSpeechQueue() {
-    if (speechQueue.length === 0) {
-      isSpeaking = false;
-      return;
-    }
-
-    isSpeaking = true;
-    const textToSpeak = speechQueue.shift();
-
-    window.speechSynthesis.resume();
-    const utterEnglish = new SpeechSynthesisUtterance(textToSpeak);
-    utterEnglish.lang = 'en-US';
-    utterEnglish.rate = 1.0;
-
-    utterEnglish.onend = () => {
-      processSpeechQueue();
-    };
-
-    utterEnglish.onerror = () => {
-      processSpeechQueue();
-    };
-
-    window.speechSynthesis.speak(utterEnglish);
-  }
-
   function announceNumber(queueType, number, action) {
     if (!('speechSynthesis' in window)) return;
 
+    // Cancel any ongoing speech before starting new call
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
+
     let englishText = "";
+
+    // Format message based on action
     if (action === 'recall') {
       englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
     } else {
       englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
     }
 
-    const now = Date.now();
-    // If called simultaneously (within 1.5 seconds), queue it up. 
-    // If clicked individually with time in between, clear ongoing speech and override immediately.
-    if (now - lastCallTime > 1500) {
-      window.speechSynthesis.cancel();
-      speechQueue = [];
-      isSpeaking = false;
-    }
-    lastCallTime = now;
+    const utterEnglish = new SpeechSynthesisUtterance(englishText);
+    utterEnglish.lang = 'en-US';
+    utterEnglish.rate = 1.0;
 
-    speechQueue.push(englishText);
-
-    if (!isSpeaking) {
-      processSpeechQueue();
-    }
+    window.speechSynthesis.speak(utterEnglish);
   }
  
   let lastActionTimestamp = null;
@@ -178,8 +146,9 @@
       
       const { type, number, action } = state.lastCalled;
 
-      window.speechSynthesis.resume();
-      announceNumber(type, number, action);
+        window.speechSynthesis.resume();
+        announceNumber(type, number, action);
+      
     }
   });
 </script>
