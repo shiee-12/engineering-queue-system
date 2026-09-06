@@ -67,26 +67,14 @@
   </main>
 
   <script src="/socket.io/socket.io.js"></script>
-<script>
+
+  <script>
   const socket = io({ transports: ['websocket'], upgrade: false });
 
-  function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
-      } else if (document.documentElement.webkitRequestFullscreen) {
-        document.documentElement.webkitRequestFullscreen();
-      }
-      } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      }
-    }
-  }
-
-  let audioUnlocked = false;
+  // Speech Queue Management
+  let speechQueue = [];
+  let isSpeaking = false;
+  let lastActionTimestamp = null;
 
   function initSpeechEngine() {
     if (!('speechSynthesis' in window)) return;
@@ -97,39 +85,62 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
-  function announceNumber(queueType, number, action) {
+  function processSpeechQueue() {
     if (!('speechSynthesis' in window)) return;
-
-    // Cancel any ongoing speech before starting new call
-    window.speechSynthesis.cancel();
+    
+    // Resume audio context if paused by browser idle policies
     window.speechSynthesis.resume();
 
-    let englishText = "";
+    // If already speaking or queue is empty, do nothing
+    if (isSpeaking || speechQueue.length === 0) return;
 
-    // Format message based on action
+    isSpeaking = true;
+    const nextAnnouncement = speechQueue.shift();
+
+    const utterEnglish = new SpeechSynthesisUtterance(nextAnnouncement.text);
+    utterEnglish.lang = 'en-US';
+    utterEnglish.rate = 1.0;
+
+    // Reset speaking state when announcement completes
+    utterEnglish.onend = () => {
+      isSpeaking = false;
+      processSpeechQueue(); // Play next queued announcement if available
+    };
+
+    // Fallback error handling
+    utterEnglish.onerror = () => {
+      isSpeaking = false;
+      processSpeechQueue();
+    };
+
+    window.speechSynthesis.speak(utterEnglish);
+  }
+
+  function queueAnnouncement(queueType, number, action) {
+    if (!('speechSynthesis' in window)) return;
+
+    let englishText = "";
     if (action === 'recall') {
       englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
     } else {
       englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
     }
 
-    const utterEnglish = new SpeechSynthesisUtterance(englishText);
-    utterEnglish.lang = 'en-US';
-    utterEnglish.rate = 1.0;
-
-    window.speechSynthesis.speak(utterEnglish);
+    // Add announcement to the queue and trigger processor
+    speechQueue.push({ type: queueType, text: englishText });
+    processSpeechQueue();
   }
- 
-  let lastActionTimestamp = null;
 
   socket.on('stateUpdate', (state) => {
     const regDisplay = document.getElementById('reg-num-display');
     const prioDisplay = document.getElementById('prio-num-display');
     const banner = document.getElementById('announcement-banner');
 
+    // 1. Update Display Numbers Instantly
     if (regDisplay) regDisplay.innerText = state.regular > 0 ? state.regular : '-';
     if (prioDisplay) prioDisplay.innerText = state.priority > 0 ? state.priority : '-';
 
+    // 2. Update Footer Banner
     let servingParts = [];
     if (state.priority > 0) servingParts.push(`Priority Number ${state.priority}`);
     if (state.regular > 0) servingParts.push(`Regular Number ${state.regular}`);
@@ -140,14 +151,19 @@
       banner.innerText = "Waiting for the next number...";
     }
 
+    // 3. Audio Triggering Logic
     if (state.lastCalled && state.lastCalled.timestamp && state.lastCalled.timestamp !== lastActionTimestamp) {
       lastActionTimestamp = state.lastCalled.timestamp;
       
       const { type, number, action } = state.lastCalled;
 
-        window.speechSynthesis.resume();
-        announceNumber(type, number, action);
-      
+      // Handle rapid individual clicks on the same queue type:
+      // Clear pending queue items for that specific line so rapid spam doesn't backlog
+      if (isSpeaking && speechQueue.length > 0 && speechQueue[0].type === type) {
+        speechQueue = speechQueue.filter(item => item.type !== type);
+      }
+
+      queueAnnouncement(type, number, action);
     }
   });
 </script>
