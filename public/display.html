@@ -87,8 +87,6 @@
     }
   }
 
-  let audioUnlocked = false;
-
   function initSpeechEngine() {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.getVoices();
@@ -98,21 +96,31 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
-  function announceNumber(queueType, number, action) {
-    if (!('speechSynthesis' in window)) return;
+  let speechTimer = null;
+  let pendingCalls = [];
 
-    // Cancel any ongoing speech before starting new call
+  function speakCombinedAnnouncement() {
+    if (pendingCalls.length === 0) return;
+
+    let textToSpeak = "";
+
+    if (pendingCalls.length > 1) {
+      const parts = pendingCalls.mao(item => `${item.queueType} Number ${item.number}`);
+      textToSpeak = `Now serving ${parts.join(' and ')}. Please proceed to the counter.`;
+    } else {
+      const { queueType, number, action } = pendingCalls[0];
+      if (action === 'recall') {
+        textToSpeak = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
+      } else {
+        textToSpeak = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
+      }
+    }
+    
+    pendingCalls = [];
+
+        // Cancel any ongoing speech before starting new call
     window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
-
-    let englishText = "";
-
-    // Format message based on action
-    if (action === 'recall') {
-      englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
-    } else {
-      englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
-    }
 
     const utterEnglish = new SpeechSynthesisUtterance(englishText);
     utterEnglish.lang = 'en-US';
@@ -120,7 +128,20 @@
 
     window.speechSynthesis.speak(utterEnglish);
   }
- 
+
+  function announceNumber(queueType, number, action) {
+    if (!('speechSynthesis' in window)) return;
+
+    pendingCalls.push({ queueType, number, action });
+
+    clearTimeout(speechTimer);
+
+    // Buffer window to combine near-simultaneous triggers (250ms)
+    speechTimer = setTimeout(() => {
+      speakCombinedAnnouncement();
+    }, 250);
+  }
+
   let lastActionTimestamp = null;
 
   socket.on('stateUpdate', (state) => {
