@@ -98,8 +98,6 @@
   window.addEventListener('DOMContentLoaded', initSpeechEngine);
   window.addEventListener('load', initSpeechEngine);
 
-  let lastEventTimestamp = 0;
-
   function announceNumber(queueType, number, action) {
     if (!('speechSynthesis' in window)) return;
 
@@ -107,16 +105,10 @@
     window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
 
-    const now = Date.now();
-    const timeDiff = now - lastEventTimestamp;
-    lastEventTimestamp = now;
-
     let englishText = "";
 
-    // If both lines were clicked simultaneously (within 400ms), announce both numbers
-    if (timeDiff < 400 && currentState.regular > 0 && currentState.priority > 0) {
-      englishText = `Now serving Regular Number ${currentState.regular} and Priority Number ${currentState.priority}. Please proceed to the counter.`;
-    } else if (action === 'recall') {
+    // Format message based on action
+    if (action === 'recall') {
       englishText = `Again, calling for ${queueType} Number ${number}. Please proceed to the counter.`;
     } else {
       englishText = `Now serving ${queueType} Number ${number}. Please proceed to the counter.`;
