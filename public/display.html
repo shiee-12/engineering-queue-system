@@ -140,22 +140,21 @@
     if (!('speechSynthesis' in window)) return;
 
     // Check if the incoming call is of a DIFFERENT queue type than what is currently buffered
-    const isDifferentType = pendingCalls.length > 0 && 
-      pendingCalls[pendingCalls.length - 1].type.toLowerCase() !== lastCalled.type.toLowerCase();
+    const isDifferentType = pendingCalls.length > 1 && 
+      pendingCalls[pendingCalls.length - 2].type.toLowerCase() !== lastCalled.type.toLowerCase();
 
     // Add incoming call to buffer
-    pendingCalls.push(lastCalled);
+    clearTimeout(speechTimer);
 
     if (isDifferentType) {
       // If Regular and Priority were clicked consecutively, speak immediately as a combined call
-      clearTimeout(speechTimer);
       speakAnnouncement(state);
     } else {
       // If clicking the same button or starting a new call sequence, wait 1000ms for a potential second button click
       clearTimeout(speechTimer);
       speechTimer = setTimeout(() => {
         speakAnnouncement(state);
-      }, 600);
+      }, 150);
     }
   }
 
